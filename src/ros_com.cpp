@@ -1,4 +1,6 @@
 #include "ros_com.h"
+#include "encoder_handler.h"
+#include "kinematics.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -20,12 +22,12 @@ float cmd_linear_x = 0.0;
 float cmd_angular_z = 0.0;
 bool motor_enabled = true;
 
-// Mock data for testing
-float mock_odom_x = 0.0;
-float mock_odom_y = 0.0;
-float mock_odom_theta = 0.0;
-int32_t mock_encoder_left = 0;
-int32_t mock_encoder_right = 0;
+// Odometry tracking variables (real hardware data)
+static float odom_x = 0.0;          // Global X position (m)
+static float odom_y = 0.0;          // Global Y position (m)
+static float odom_theta = 0.0;      // Global heading (rad)
+static int32_t last_encoder_left = 0;   // Previous left encoder count
+static int32_t last_encoder_right = 0;  // Previous right encoder count
 
 /* --------------------------- */
 /* --- RCL objects Declare --- */
@@ -134,42 +136,52 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
 
         rcl_ret_t ret = RCL_RET_OK;
 
-        // Update mock odometry data (simple integration)
-        float dt = 0.05; // 50ms timer period
-        if (motor_enabled) {
-            mock_odom_x += cmd_linear_x * cos(mock_odom_theta) * dt;
-            mock_odom_y += cmd_linear_x * sin(mock_odom_theta) * dt;
-            mock_odom_theta += cmd_angular_z * dt;
+        // Get real encoder counts from hardware
+        int32_t current_left, current_right;
+        getEncoderCounts(current_left, current_right);
 
-            // Update mock encoders (assume 180 pulses per wheel revolution, 0.065m wheel diameter)
-            // Convert velocity to encoder pulses
-            float pulses_per_meter = 180.0 / (3.14159 * 0.065);
-            mock_encoder_left += (int32_t)(cmd_linear_x * dt * pulses_per_meter);
-            mock_encoder_right += (int32_t)(cmd_linear_x * dt * pulses_per_meter);
-        }
+        // Calculate encoder deltas since last update
+        int32_t delta_left = current_left - last_encoder_left;
+        int32_t delta_right = current_right - last_encoder_right;
 
-        // Publish Odometry
+        // Update odometry using real encoder data and kinematics
+        updateOdometry(delta_left, delta_right, odom_x, odom_y, odom_theta);
+
+        // Save current encoder counts for next iteration
+        last_encoder_left = current_left;
+        last_encoder_right = current_right;
+
+        // Get current wheel speeds for twist velocity
+        float left_speed, right_speed;
+        getWheelSpeeds(left_speed, right_speed);
+
+        // Convert wheel speeds to twist (linear_x, angular_z)
+        float linear_x, angular_z;
+        wheelSpeedsToTwist(left_speed, right_speed, linear_x, angular_z);
+
+        // Publish Odometry with real data
         odom_msg.header.stamp.sec = (int32_t)(millis() / 1000);
         odom_msg.header.stamp.nanosec = (uint32_t)((millis() % 1000) * 1000000);
 
-        odom_msg.pose.pose.position.x = mock_odom_x;
-        odom_msg.pose.pose.position.y = mock_odom_y;
+        odom_msg.pose.pose.position.x = odom_x;
+        odom_msg.pose.pose.position.y = odom_y;
         odom_msg.pose.pose.position.z = 0.0;
 
         // Convert theta to quaternion
         odom_msg.pose.pose.orientation.x = 0.0;
         odom_msg.pose.pose.orientation.y = 0.0;
-        odom_msg.pose.pose.orientation.z = sin(mock_odom_theta / 2.0);
-        odom_msg.pose.pose.orientation.w = cos(mock_odom_theta / 2.0);
+        odom_msg.pose.pose.orientation.z = sin(odom_theta / 2.0);
+        odom_msg.pose.pose.orientation.w = cos(odom_theta / 2.0);
 
-        odom_msg.twist.twist.linear.x = cmd_linear_x;
-        odom_msg.twist.twist.angular.z = cmd_angular_z;
+        // Publish actual velocity from encoders (not commanded velocity)
+        odom_msg.twist.twist.linear.x = linear_x;
+        odom_msg.twist.twist.angular.z = angular_z;
 
         ret = rcl_publish(&odom_pub, &odom_msg, NULL);
 
-        // Publish Encoder counts
-        encoder_msg.data.data[0] = mock_encoder_left;
-        encoder_msg.data.data[1] = mock_encoder_right;
+        // Publish real encoder counts
+        encoder_msg.data.data[0] = current_left;
+        encoder_msg.data.data[1] = current_right;
         ret = rcl_publish(&encoder_pub, &encoder_msg, NULL);
     }
 }
