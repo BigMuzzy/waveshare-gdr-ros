@@ -1,0 +1,102 @@
+#include "encoder_handler.h"
+#include <Arduino.h>
+
+// Encoder objects (instantiated here, declared extern in header)
+ESP32Encoder encoderLeft;
+ESP32Encoder encoderRight;
+
+// Speed calculation variables
+static unsigned long lastTime = 0;
+static int32_t lastCountLeft = 0;
+static int32_t lastCountRight = 0;
+static float speedLeft = 0.0;
+static float speedRight = 0.0;
+
+// Conversion factor: pulses to meters
+// pulses_to_meters = (π * diameter) / pulses_per_revolution
+static const float PULSES_TO_METERS = (3.14159265359 * WHEEL_DIAMETER) / PULSES_PER_REV;
+
+/**
+ * Initialize encoders
+ * Based on reference/general_driver/movtion_module.h::initEncoders()
+ */
+void encoderInit() {
+    // Attach encoders in half-quadrature mode
+    // Half-quad uses only one channel (A), with B for direction
+    encoderLeft.attachHalfQuad(AENCA, AENCB);
+    encoderRight.attachHalfQuad(BENCA, BENCB);
+
+    // Clear encoder counts
+    encoderLeft.setCount(0);
+    encoderRight.setCount(0);
+
+    // Initialize timing and counts
+    lastTime = micros();
+    lastCountLeft = 0;
+    lastCountRight = 0;
+    speedLeft = 0.0;
+    speedRight = 0.0;
+}
+
+/**
+ * Get raw encoder counts
+ * @param left  Reference to store left encoder count
+ * @param right Reference to store right encoder count
+ */
+void getEncoderCounts(int32_t &left, int32_t &right) {
+    left = (int32_t)encoderLeft.getCount();
+    right = (int32_t)encoderRight.getCount();
+}
+
+/**
+ * Calculate and return wheel speeds in m/s
+ * Based on reference/general_driver/movtion_module.h::getWheelSpeed()
+ *
+ * @param left_speed  Reference to store left wheel speed (m/s)
+ * @param right_speed Reference to store right wheel speed (m/s)
+ *
+ * Speed calculation:
+ * speed = (delta_pulses / delta_time_seconds) * pulses_to_meters
+ */
+void getWheelSpeeds(float &left_speed, float &right_speed) {
+    unsigned long currentTime = micros();
+    int32_t currentCountLeft = (int32_t)encoderLeft.getCount();
+    int32_t currentCountRight = (int32_t)encoderRight.getCount();
+
+    // Calculate time delta in seconds
+    float deltaTime = (float)(currentTime - lastTime) / 1000000.0;
+
+    // Prevent division by zero
+    if (deltaTime > 0.0001) {  // At least 0.1ms has passed
+        // Calculate pulse deltas
+        int32_t deltaLeft = currentCountLeft - lastCountLeft;
+        int32_t deltaRight = currentCountRight - lastCountRight;
+
+        // Calculate speeds in m/s
+        // speed = (pulses/time) * (meters/pulse)
+        speedLeft = ((float)deltaLeft / deltaTime) * PULSES_TO_METERS;
+        speedRight = ((float)deltaRight / deltaTime) * PULSES_TO_METERS;
+
+        // Update last values
+        lastCountLeft = currentCountLeft;
+        lastCountRight = currentCountRight;
+        lastTime = currentTime;
+    }
+
+    // Return calculated speeds
+    left_speed = speedLeft;
+    right_speed = speedRight;
+}
+
+/**
+ * Reset encoder counts to zero
+ */
+void resetEncoders() {
+    encoderLeft.setCount(0);
+    encoderRight.setCount(0);
+    lastCountLeft = 0;
+    lastCountRight = 0;
+    speedLeft = 0.0;
+    speedRight = 0.0;
+    lastTime = micros();
+}
