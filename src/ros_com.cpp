@@ -1,6 +1,7 @@
 #include "ros_com.h"
 #include "encoder_handler.h"
 #include "kinematics.h"
+#include "debug_serial.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -66,18 +67,9 @@ std_msgs__msg__Bool motor_enable_msg;
 /* -------------------- */
 void init_ros_msgs() {
 
-    nav_msgs__msg__Odometry__init(&odom_msg);
-    // Initialize odometry message with static memory (required for micro-ROS)
-    static char odom_frame_id[] = "odom";
-    static char base_link_frame_id[] = "base_link";
-
-    odom_msg.header.frame_id.data = odom_frame_id;
-    odom_msg.header.frame_id.size = strlen(odom_frame_id);
-    odom_msg.header.frame_id.capacity = sizeof(odom_frame_id);
-
-    odom_msg.child_frame_id.data = base_link_frame_id;
-    odom_msg.child_frame_id.size = strlen(base_link_frame_id);
-    odom_msg.child_frame_id.capacity = sizeof(base_link_frame_id);
+    // Initialize odometry message
+    odom_msg.header.frame_id.data = "odom";
+    odom_msg.child_frame_id.data = "base_link";
 
     odom_msg.pose.pose.position.x = 0.0;
     odom_msg.pose.pose.position.y = 0.0;
@@ -94,8 +86,7 @@ void init_ros_msgs() {
     odom_msg.twist.twist.angular.y = 0.0;
     odom_msg.twist.twist.angular.z = 0.0;
 
-    // Initialize covariance matrices (6x6 = 36 elements)
-    // Set all to zero - indicates no covariance data available
+    // Initialize covariance arrays (fixed 36-element arrays in struct)
     for (int i = 0; i < 36; i++) {
         odom_msg.pose.covariance[i] = 0.0;
         odom_msg.twist.covariance[i] = 0.0;
@@ -142,6 +133,7 @@ void motor_enable_callback(const void *msgin) {
 /* --- ROS Timer Callback --- */
 /* -------------------------- */
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
+
     (void) last_call_time;
     if (timer != NULL) {
 
@@ -171,8 +163,9 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
         wheelSpeedsToTwist(left_speed, right_speed, linear_x, angular_z);
 
         // Publish Odometry with real data
-        odom_msg.header.stamp.sec = (int32_t)(millis() / 1000);
-        odom_msg.header.stamp.nanosec = (uint32_t)((millis() % 1000) * 1000000);
+        int64_t time_ns = rmw_uros_epoch_nanos();
+        odom_msg.header.stamp.sec = (int32_t)(time_ns / 1000000000);
+        odom_msg.header.stamp.nanosec = (uint32_t)(time_ns % 1000000000);
 
         odom_msg.pose.pose.position.x = odom_x;
         odom_msg.pose.pose.position.y = odom_y;
@@ -202,6 +195,10 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
 ////////////////////////////////////
 bool create_entities() {
 
+    // Sync session timeout
+    const int timeout_ms = 1000;
+    rmw_uros_sync_session(timeout_ms);
+
     const char * node_name = "general_driver";
     const char * ns = "";
     const int domain_id = 0;
@@ -219,37 +216,42 @@ bool create_entities() {
     /* --- Publisher --- */
     /* ----------------- */
 
-    rclc_publisher_init_best_effort(
+    ret = rclc_publisher_init(
         &odom_pub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
-        "/ugv/odom");
+        "/ugv/odom",
+        &rmw_qos_profile_default);
 
-    rclc_publisher_init_best_effort(
+    rclc_publisher_init(
         &encoder_pub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        "/ugv/encoder");
+        "/ugv/encoder",
+        &rmw_qos_profile_default);
 
     /* -------------------- */
     /* --- Subscription --- */
     /* -------------------- */
 
-    rclc_subscription_init_best_effort(
+    rclc_subscription_init(
         &cmd_vel_sub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-        "/cmd_vel");
+        "/cmd_vel",
+        &rmw_qos_profile_default);
 
-    rclc_subscription_init_best_effort(
+    rclc_subscription_init(
         &motor_enable_sub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
-        "/ugv/motor_enable");
+        "/ugv/motor_enable",
+        &rmw_qos_profile_default);
 
     // Timer for publishing at 20Hz (50ms)
     const unsigned int timer_timeout = 50;
-    rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout), timer_callback);
+    ret = rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout), timer_callback);
+
 
     // num_handles = subscribers + timer
     unsigned int num_handles = 3; // 2 subscribers + 1 timer

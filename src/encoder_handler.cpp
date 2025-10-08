@@ -1,4 +1,5 @@
 #include "encoder_handler.h"
+#include "debug_serial.h"
 #include <Arduino.h>
 
 // Encoder objects (instantiated here, declared extern in header)
@@ -39,6 +40,12 @@ void encoderInit() {
     lastCountRight = 0;
     speedLeft = 0.0;
     speedRight = 0.0;
+
+    debugLog("ENCODER", "Initialized (half-quad mode)");
+    debugPrintf("[ENCODER] Left: GPIO%d/%d, Right: GPIO%d/%d\n",
+                AENCA, AENCB, BENCA, BENCB);
+    debugPrintf("[ENCODER] Pulses/rev: %d, Wheel dia: %.3fm\n",
+                PULSES_PER_REV, WHEEL_DIAMETER);
 }
 
 /**

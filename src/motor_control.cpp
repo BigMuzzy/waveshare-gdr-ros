@@ -1,4 +1,5 @@
 #include "motor_control.h"
+#include "debug_serial.h"
 
 /**
  * Initialize motor control pins and PWM channels
@@ -25,6 +26,10 @@ void motorInit() {
     digitalWrite(AIN2, LOW);
     digitalWrite(BIN1, LOW);
     digitalWrite(BIN2, LOW);
+
+    debugLog("MOTOR", "PWM channels configured");
+    debugPrintf("[MOTOR] Ch A: GPIO%d (%dkHz), Ch B: GPIO%d (%dkHz)\n",
+                PWMA, PWM_FREQ/1000, PWMB, PWM_FREQ/1000);
 }
 
 /**

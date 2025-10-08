@@ -4,30 +4,45 @@
 #include "encoder_handler.h"
 #include "pid_controller.h"
 #include "kinematics.h"
+#include "debug_serial.h"
 
 // Global variables for control loop
 float target_left_speed = 0.0;   // Target speed for left wheel (m/s)
 float target_right_speed = 0.0;  // Target speed for right wheel (m/s)
 
 void setup() {
+    // Initialize debug serial FIRST (for early debugging on GPIO5/4)
+    debugSerialInit(115200);
+    debugLog("INIT", "System starting...");
+
     // Initialize Serial for micro-ROS (CP2102 USB-UART bridge)
     Serial.begin(115200);
     delay(2000);
 
     // Initialize micro-ROS transport over Serial
+    debugLog("INIT", "Setting up micro-ROS transport...");
     set_microros_serial_transports(Serial);
     delay(2000);
 
     // Initialize ROS messages
+    debugLog("INIT", "Initializing ROS messages...");
     init_ros_msgs();
 
     // Initialize hardware components
+    debugLog("INIT", "Initializing motors...");
     motorInit();        // H-bridge PWM setup
+
+    debugLog("INIT", "Initializing encoders...");
     encoderInit();      // Encoder interrupt setup
+
+    debugLog("INIT", "Initializing PID...");
     pidInit();          // PID controller initialization
 
     // Reset encoders to zero
     resetEncoders();
+
+    debugLog("INIT", "System ready!");
+    debugPrintln();
 }
 
 void loop() {

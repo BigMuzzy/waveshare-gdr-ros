@@ -1,4 +1,5 @@
 #include "kinematics.h"
+#include "debug_serial.h"
 #include <Arduino.h>
 #include <math.h>
 
@@ -43,7 +44,7 @@ void wheelSpeedsToTwist(float left_speed, float right_speed,
 void updateOdometry(int32_t left_delta, int32_t right_delta,
                    float &x, float &y, float &theta) {
 
-    // Conversion factor: pulses to meters
+                    // Conversion factor: pulses to meters
     // meters_per_pulse = (π * diameter) / pulses_per_revolution
     const float METERS_PER_PULSE = (M_PI * WHEEL_DIAMETER) / PULSES_PER_REV;
 

@@ -1,4 +1,5 @@
 #include "pid_controller.h"
+#include "debug_serial.h"
 #include <Arduino.h>
 
 // Internal variables for PID computation
@@ -27,6 +28,11 @@ void pidInit() {
     // Turn on automatic mode
     pidLeft.SetMode(AUTOMATIC);
     pidRight.SetMode(AUTOMATIC);
+
+    debugLog("PID", "Controllers initialized");
+    debugPrintf("[PID] Kp=%.1f, Ki=%.1f, Kd=%.1f\n", PID_KP, PID_KI, PID_KD);
+    debugPrintf("[PID] Output: [%d, %d], Threshold: %d\n",
+                PID_OUTPUT_MIN, PID_OUTPUT_MAX, THRESHOLD_PWM);
 }
 
 /**
