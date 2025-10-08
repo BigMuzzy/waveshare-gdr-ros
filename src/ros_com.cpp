@@ -66,14 +66,18 @@ std_msgs__msg__Bool motor_enable_msg;
 /* -------------------- */
 void init_ros_msgs() {
 
-    // Initialize odometry message
-    odom_msg.header.frame_id.data = (char*)"odom";
-    odom_msg.header.frame_id.size = strlen(odom_msg.header.frame_id.data);
-    odom_msg.header.frame_id.capacity = odom_msg.header.frame_id.size + 1;
+    nav_msgs__msg__Odometry__init(&odom_msg);
+    // Initialize odometry message with static memory (required for micro-ROS)
+    static char odom_frame_id[] = "odom";
+    static char base_link_frame_id[] = "base_link";
 
-    odom_msg.child_frame_id.data = (char*)"base_link";
-    odom_msg.child_frame_id.size = strlen(odom_msg.child_frame_id.data);
-    odom_msg.child_frame_id.capacity = odom_msg.child_frame_id.size + 1;
+    odom_msg.header.frame_id.data = odom_frame_id;
+    odom_msg.header.frame_id.size = strlen(odom_frame_id);
+    odom_msg.header.frame_id.capacity = sizeof(odom_frame_id);
+
+    odom_msg.child_frame_id.data = base_link_frame_id;
+    odom_msg.child_frame_id.size = strlen(base_link_frame_id);
+    odom_msg.child_frame_id.capacity = sizeof(base_link_frame_id);
 
     odom_msg.pose.pose.position.x = 0.0;
     odom_msg.pose.pose.position.y = 0.0;
@@ -89,6 +93,13 @@ void init_ros_msgs() {
     odom_msg.twist.twist.angular.x = 0.0;
     odom_msg.twist.twist.angular.y = 0.0;
     odom_msg.twist.twist.angular.z = 0.0;
+
+    // Initialize covariance matrices (6x6 = 36 elements)
+    // Set all to zero - indicates no covariance data available
+    for (int i = 0; i < 36; i++) {
+        odom_msg.pose.covariance[i] = 0.0;
+        odom_msg.twist.covariance[i] = 0.0;
+    }
 
     // Initialize encoder message (2 encoders: left, right)
     static int32_t encoder_data[2] = {0, 0};

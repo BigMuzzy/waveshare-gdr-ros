@@ -21,6 +21,9 @@ static const float PULSES_TO_METERS = (3.14159265359 * WHEEL_DIAMETER) / PULSES_
  * Based on reference/general_driver/movtion_module.h::initEncoders()
  */
 void encoderInit() {
+    // Enable internal pullup resistors for ESP32Encoder
+    ESP32Encoder::useInternalWeakPullResistors = puType::up;
+
     // Attach encoders in half-quadrature mode
     // Half-quad uses only one channel (A), with B for direction
     encoderLeft.attachHalfQuad(AENCA, AENCB);

@@ -13,7 +13,7 @@
 // NOTE: These values are from the General Driver default configuration
 // Adjust if your robot has different specifications!
 #define WHEEL_DIAMETER 0.065      // meters (65mm) - measure your actual wheel
-#define PULSES_PER_REV 180        // encoder pulses per wheel revolution
+#define PULSES_PER_REV 1170        // encoder pulses per wheel revolution
 #define WHEEL_BASE 0.200          // meters (distance between left/right wheels)
 
 // Encoder initialization
