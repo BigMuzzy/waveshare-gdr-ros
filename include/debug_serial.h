@@ -2,19 +2,19 @@
 #define DEBUG_SERIAL_H
 
 #include <Arduino.h>
+#include "config.h"
 
-// GPIO Pin definitions
-#define DEBUG_TX_PIN 5   // GPIO5 - TX to USB-UART adapter RX
-#define DEBUG_RX_PIN 4   // GPIO4 - RX from USB-UART adapter TX (optional)
+// Use GPIO pins from config.h: Debug::TX_PIN, Debug::RX_PIN
+// Use baud rate from config.h: Debug::BAUD_RATE
 
 // Debug serial object - uses hardware UART2
 extern HardwareSerial DebugSerial;
 
 /**
  * Initialize debug serial port
- * @param baud Baud rate (default: 115200)
+ * @param baud Baud rate (default from config.h: Debug::BAUD_RATE)
  */
-void debugSerialInit(unsigned long baud = 115200);
+void debugSerialInit(unsigned long baud = Debug::BAUD_RATE);
 
 /**
  * Print debug message (same as Serial.print)

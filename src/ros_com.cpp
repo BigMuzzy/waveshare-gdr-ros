@@ -2,6 +2,7 @@
 #include "encoder_handler.h"
 #include "kinematics.h"
 #include "debug_serial.h"
+#include "config.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -67,9 +68,9 @@ std_msgs__msg__Bool motor_enable_msg;
 /* -------------------- */
 void init_ros_msgs() {
 
-    // Initialize odometry message
-    odom_msg.header.frame_id.data = "odom";
-    odom_msg.child_frame_id.data = "base_link";
+    // Initialize odometry message (frame IDs from config.h)
+    odom_msg.header.frame_id.data = const_cast<char*>(ROS::FRAME_ID_ODOM);
+    odom_msg.child_frame_id.data = const_cast<char*>(ROS::FRAME_ID_BASE_LINK);
 
     odom_msg.pose.pose.position.x = 0.0;
     odom_msg.pose.pose.position.y = 0.0;
@@ -86,16 +87,16 @@ void init_ros_msgs() {
     odom_msg.twist.twist.angular.y = 0.0;
     odom_msg.twist.twist.angular.z = 0.0;
 
-    // Initialize covariance arrays (fixed 36-element arrays in struct)
-    for (int i = 0; i < 36; i++) {
+    // Initialize covariance arrays (size from config.h)
+    for (int i = 0; i < ROS::COVARIANCE_ARRAY_SIZE; i++) {
         odom_msg.pose.covariance[i] = 0.0;
         odom_msg.twist.covariance[i] = 0.0;
     }
 
-    // Initialize encoder message (2 encoders: left, right)
-    static int32_t encoder_data[2] = {0, 0};
-    encoder_msg.data.capacity = 2;
-    encoder_msg.data.size = 2;
+    // Initialize encoder message (size from config.h)
+    static int32_t encoder_data[ROS::ENCODER_ARRAY_SIZE] = {0, 0};
+    encoder_msg.data.capacity = ROS::ENCODER_ARRAY_SIZE;
+    encoder_msg.data.size = ROS::ENCODER_ARRAY_SIZE;
     encoder_msg.data.data = encoder_data;
 
     // Initialize subscriber messages
@@ -195,13 +196,13 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
 ////////////////////////////////////
 bool create_entities() {
 
-    // Sync session timeout
-    const int timeout_ms = 1000;
-    rmw_uros_sync_session(timeout_ms);
+    // Sync session timeout (from config.h)
+    rmw_uros_sync_session(ROS::SESSION_TIMEOUT_MS);
 
-    const char * node_name = "general_driver";
-    const char * ns = "";
-    const int domain_id = 0;
+    // Node configuration (from config.h)
+    const char * node_name = ROS::NODE_NAME;
+    const char * ns = ROS::NAMESPACE;
+    const int domain_id = ROS::DOMAIN_ID;
 
     // Initialize node
     allocator = rcl_get_default_allocator();
@@ -220,14 +221,14 @@ bool create_entities() {
         &odom_pub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
-        "/ugv/odom",
+        ROS::TOPIC_ODOM,
         &rmw_qos_profile_default);
 
     rclc_publisher_init(
         &encoder_pub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
-        "/ugv/encoder",
+        ROS::TOPIC_ENCODER,
         &rmw_qos_profile_default);
 
     /* -------------------- */
@@ -238,23 +239,21 @@ bool create_entities() {
         &cmd_vel_sub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-        "/cmd_vel",
+        ROS::TOPIC_CMD_VEL,
         &rmw_qos_profile_default);
 
     rclc_subscription_init(
         &motor_enable_sub,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
-        "/ugv/motor_enable",
+        ROS::TOPIC_MOTOR_ENABLE,
         &rmw_qos_profile_default);
 
-    // Timer for publishing at 20Hz (50ms)
-    const unsigned int timer_timeout = 50;
-    ret = rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout), timer_callback);
+    // Timer configuration (from config.h)
+    ret = rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(ROS::TIMER_PERIOD_MS), timer_callback);
 
-
-    // num_handles = subscribers + timer
-    unsigned int num_handles = 3; // 2 subscribers + 1 timer
+    // Executor configuration (from config.h)
+    unsigned int num_handles = ROS::NUM_HANDLES;
     executor = rclc_executor_get_zero_initialized_executor();
     rclc_executor_init(&executor, &support.context, num_handles, &allocator);
     rclc_executor_add_subscription(&executor, &cmd_vel_sub, &cmd_vel_msg, &cmd_vel_callback, ON_NEW_DATA);
@@ -288,7 +287,8 @@ void ros_loop() {
     switch (state) {
         case WAITING_AGENT:
             state_connected = false;
-            EXECUTE_EVERY_N_MS(200, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
+            EXECUTE_EVERY_N_MS(ROS::AGENT_WAIT_INTERVAL_MS,
+                state = (RMW_RET_OK == rmw_uros_ping_agent(ROS::PING_TIMEOUT_MS, ROS::PING_ATTEMPTS)) ? AGENT_AVAILABLE : WAITING_AGENT;);
             break;
         case AGENT_AVAILABLE:
             state = (true == create_entities()) ? AGENT_CONNECTED : WAITING_AGENT;
@@ -298,10 +298,11 @@ void ros_loop() {
             };
             break;
         case AGENT_CONNECTED:
-            EXECUTE_EVERY_N_MS(1000, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 5)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
+            EXECUTE_EVERY_N_MS(ROS::AGENT_CHECK_INTERVAL_MS,
+                state = (RMW_RET_OK == rmw_uros_ping_agent(ROS::PING_TIMEOUT_MS, ROS::PING_ATTEMPTS_CONNECTED)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
             if (state == AGENT_CONNECTED) {
                 state_connected = true;
-                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(ROS::EXECUTOR_SPIN_TIMEOUT_MS));
             }
             break;
         case AGENT_DISCONNECTED:

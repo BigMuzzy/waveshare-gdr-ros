@@ -1,4 +1,5 @@
 #include "kinematics.h"
+#include "config.h"
 #include "debug_serial.h"
 #include <Arduino.h>
 #include <math.h>
@@ -13,10 +14,10 @@
  */
 void twistToWheelSpeeds(float linear_x, float angular_z,
                         float &left_speed, float &right_speed) {
-    // Differential drive kinematics
+    // Differential drive kinematics (wheelbase from config.h)
     // When turning: inner wheel slows down, outer wheel speeds up
-    left_speed = linear_x - (angular_z * WHEEL_BASE / 2.0);
-    right_speed = linear_x + (angular_z * WHEEL_BASE / 2.0);
+    left_speed = linear_x - (angular_z * Robot::WHEEL_BASE_M / 2.0);
+    right_speed = linear_x + (angular_z * Robot::WHEEL_BASE_M / 2.0);
 }
 
 /**
@@ -28,8 +29,8 @@ void wheelSpeedsToTwist(float left_speed, float right_speed,
     // Linear velocity is the average of both wheels
     linear_x = (left_speed + right_speed) / 2.0;
 
-    // Angular velocity is the difference divided by wheelbase
-    angular_z = (right_speed - left_speed) / WHEEL_BASE;
+    // Angular velocity is the difference divided by wheelbase (from config.h)
+    angular_z = (right_speed - left_speed) / Robot::WHEEL_BASE_M;
 }
 
 /**
@@ -44,9 +45,8 @@ void wheelSpeedsToTwist(float left_speed, float right_speed,
 void updateOdometry(int32_t left_delta, int32_t right_delta,
                    float &x, float &y, float &theta) {
 
-                    // Conversion factor: pulses to meters
-    // meters_per_pulse = (π * diameter) / pulses_per_revolution
-    const float METERS_PER_PULSE = (M_PI * WHEEL_DIAMETER) / PULSES_PER_REV;
+    // Use pre-calculated conversion factor from config.h
+    const float METERS_PER_PULSE = Robot::METERS_PER_PULSE;
 
     // Convert encoder pulses to linear distance traveled (meters)
     float left_meters = left_delta * METERS_PER_PULSE;
@@ -56,7 +56,7 @@ void updateOdometry(int32_t left_delta, int32_t right_delta,
     // delta_s: linear displacement of the robot center
     // delta_theta: change in heading angle
     float delta_s = (left_meters + right_meters) / 2.0;
-    float delta_theta = (right_meters - left_meters) / WHEEL_BASE;
+    float delta_theta = (right_meters - left_meters) / Robot::WHEEL_BASE_M;
 
     // Update global pose using midpoint method
     // This assumes the robot moves in a straight line at the average heading

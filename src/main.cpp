@@ -12,17 +12,17 @@ float target_right_speed = 0.0;  // Target speed for right wheel (m/s)
 
 void setup() {
     // Initialize debug serial FIRST (for early debugging on GPIO5/4)
-    debugSerialInit(115200);
+    debugSerialInit(Debug::BAUD_RATE);
     debugLog("INIT", "System starting...");
 
     // Initialize Serial for micro-ROS (CP2102 USB-UART bridge)
-    Serial.begin(115200);
-    delay(2000);
+    Serial.begin(UARTConfig::BAUD_RATE);
+    delay(UARTConfig::INIT_DELAY_MS);
 
     // Initialize micro-ROS transport over Serial
     debugLog("INIT", "Setting up micro-ROS transport...");
     set_microros_serial_transports(Serial);
-    delay(2000);
+    delay(UARTConfig::INIT_DELAY_MS);
 
     // Initialize ROS messages
     debugLog("INIT", "Initializing ROS messages...");

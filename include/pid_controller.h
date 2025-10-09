@@ -3,19 +3,10 @@
 
 #include <Arduino.h>
 #include <PID_v1.h>  // br3ttb/PID library
+#include "config.h"
 
-// PID gains (from reference/general_driver/ugv_config.h)
-// These values are tuned for the General Driver Board
-#define PID_KP 20.0
-#define PID_KI 2000.0
-#define PID_KD 0.0
-
-// Output limits (PWM range)
-#define PID_OUTPUT_MIN -255
-#define PID_OUTPUT_MAX 255
-
-// Minimum PWM threshold (below this, motor won't move effectively)
-#define THRESHOLD_PWM 23
+// All PID constants are now in config.h
+// Access via PIDConfig::KP, PIDConfig::KI, PIDConfig::KD, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX, PIDConfig::THRESHOLD
 
 // PID controller initialization
 void pidInit();

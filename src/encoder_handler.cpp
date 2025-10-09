@@ -13,9 +13,8 @@ static int32_t lastCountRight = 0;
 static float speedLeft = 0.0;
 static float speedRight = 0.0;
 
-// Conversion factor: pulses to meters
-// pulses_to_meters = (π * diameter) / pulses_per_revolution
-static const float PULSES_TO_METERS = (3.14159265359 * WHEEL_DIAMETER) / PULSES_PER_REV;
+// Conversion factor: pulses to meters (from config.h Robot namespace)
+static const float PULSES_TO_METERS = Robot::METERS_PER_PULSE;
 
 /**
  * Initialize encoders
@@ -27,8 +26,8 @@ void encoderInit() {
 
     // Attach encoders in half-quadrature mode
     // Half-quad uses only one channel (A), with B for direction
-    encoderLeft.attachHalfQuad(AENCA, AENCB);
-    encoderRight.attachHalfQuad(BENCA, BENCB);
+    encoderLeft.attachHalfQuad(Encoder::LEFT_A_PIN, Encoder::LEFT_B_PIN);
+    encoderRight.attachHalfQuad(Encoder::RIGHT_A_PIN, Encoder::RIGHT_B_PIN);
 
     // Clear encoder counts
     encoderLeft.setCount(0);
@@ -43,9 +42,10 @@ void encoderInit() {
 
     debugLog("ENCODER", "Initialized (half-quad mode)");
     debugPrintf("[ENCODER] Left: GPIO%d/%d, Right: GPIO%d/%d\n",
-                AENCA, AENCB, BENCA, BENCB);
+                Encoder::LEFT_A_PIN, Encoder::LEFT_B_PIN,
+                Encoder::RIGHT_A_PIN, Encoder::RIGHT_B_PIN);
     debugPrintf("[ENCODER] Pulses/rev: %d, Wheel dia: %.3fm\n",
-                PULSES_PER_REV, WHEEL_DIAMETER);
+                Encoder::PULSES_PER_REV, Robot::WHEEL_DIAMETER_M);
 }
 
 /**
@@ -76,8 +76,8 @@ void getWheelSpeeds(float &left_speed, float &right_speed) {
     // Calculate time delta in seconds
     float deltaTime = (float)(currentTime - lastTime) / 1000000.0;
 
-    // Prevent division by zero
-    if (deltaTime > 0.0001) {  // At least 0.1ms has passed
+    // Prevent division by zero (minimum time delta from config)
+    if (deltaTime > Encoder::MIN_DELTA_TIME) {
         // Calculate pulse deltas
         int32_t deltaLeft = currentCountLeft - lastCountLeft;
         int32_t deltaRight = currentCountRight - lastCountRight;

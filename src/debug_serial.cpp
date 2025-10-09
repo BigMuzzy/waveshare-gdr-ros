@@ -1,21 +1,21 @@
 #include "debug_serial.h"
 #include <stdarg.h>
 
-// Use UART2 on custom pins
+// Use UART2 on custom pins (from config.h)
 HardwareSerial DebugSerial(2);
 
 void debugSerialInit(unsigned long baud) {
-    // Initialize UART2 on GPIO5 (TX) and GPIO4 (RX)
-    DebugSerial.begin(baud, SERIAL_8N1, DEBUG_RX_PIN, DEBUG_TX_PIN);
+    // Initialize UART2 on GPIO pins from config.h
+    DebugSerial.begin(baud, SERIAL_8N1, Debug::RX_PIN, Debug::TX_PIN);
 
-    // Wait a bit for serial to stabilize
-    delay(100);
+    // Wait for serial to stabilize (delay from config.h)
+    delay(Debug::INIT_DELAY_MS);
 
     // Send startup banner
     DebugSerial.println();
     DebugSerial.println("========================================");
     DebugSerial.println("  General Driver Debug Serial");
-    DebugSerial.println("  GPIO5 (TX) / GPIO4 (RX)");
+    DebugSerial.printf("  GPIO%d (TX) / GPIO%d (RX)\n", Debug::TX_PIN, Debug::RX_PIN);
     DebugSerial.println("========================================");
     DebugSerial.print("Initialized at ");
     DebugSerial.print(baud);

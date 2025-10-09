@@ -2,19 +2,11 @@
 #define ENCODER_HANDLER_H
 
 #include <ESP32Encoder.h>
+#include "config.h"
 
-// Pin definitions (from reference/general_driver/ugv_config.h)
-#define AENCA 35             // Left encoder A
-#define AENCB 34             // Left encoder B
-#define BENCA 27             // Right encoder A
-#define BENCB 16             // Right encoder B
-
-// Robot parameters
-// NOTE: These values are from the General Driver default configuration
-// Adjust if your robot has different specifications!
-#define WHEEL_DIAMETER 0.065      // meters (65mm) - measure your actual wheel
-#define PULSES_PER_REV 1170        // encoder pulses per wheel revolution
-#define WHEEL_BASE 0.200          // meters (distance between left/right wheels)
+// All encoder constants are now in config.h
+// Access via Encoder::LEFT_A_PIN, Encoder::PULSES_PER_REV, etc.
+// Robot physical parameters: Robot::WHEEL_DIAMETER_M, Robot::WHEEL_BASE_M, etc.
 
 // Encoder initialization
 void encoderInit();

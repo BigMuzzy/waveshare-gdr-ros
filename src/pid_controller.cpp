@@ -13,8 +13,8 @@ static double rightSetpoint = 0.0;
 
 // PID controller objects (instantiated here, declared extern in header)
 // Constructor: PID(Input*, Output*, Setpoint*, Kp, Ki, Kd, Direction)
-PID pidLeft(&leftInput, &leftOutput, &leftSetpoint, PID_KP, PID_KI, PID_KD, DIRECT);
-PID pidRight(&rightInput, &rightOutput, &rightSetpoint, PID_KP, PID_KI, PID_KD, DIRECT);
+PID pidLeft(&leftInput, &leftOutput, &leftSetpoint, PIDConfig::KP, PIDConfig::KI, PIDConfig::KD, DIRECT);
+PID pidRight(&rightInput, &rightOutput, &rightSetpoint, PIDConfig::KP, PIDConfig::KI, PIDConfig::KD, DIRECT);
 
 /**
  * Initialize PID controllers
@@ -22,17 +22,17 @@ PID pidRight(&rightInput, &rightOutput, &rightSetpoint, PID_KP, PID_KI, PID_KD, 
  */
 void pidInit() {
     // Set output limits
-    pidLeft.SetOutputLimits(PID_OUTPUT_MIN, PID_OUTPUT_MAX);
-    pidRight.SetOutputLimits(PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+    pidLeft.SetOutputLimits(PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
+    pidRight.SetOutputLimits(PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
 
     // Turn on automatic mode
     pidLeft.SetMode(AUTOMATIC);
     pidRight.SetMode(AUTOMATIC);
 
     debugLog("PID", "Controllers initialized");
-    debugPrintf("[PID] Kp=%.1f, Ki=%.1f, Kd=%.1f\n", PID_KP, PID_KI, PID_KD);
-    debugPrintf("[PID] Output: [%d, %d], Threshold: %d\n",
-                PID_OUTPUT_MIN, PID_OUTPUT_MAX, THRESHOLD_PWM);
+    debugPrintf("[PID] Kp=%.1f, Ki=%.1f, Kd=%.1f\n", PIDConfig::KP, PIDConfig::KI, PIDConfig::KD);
+    debugPrintf("[PID] Output: [%.0f, %.0f], Threshold: %d\n",
+                PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX, PIDConfig::THRESHOLD);
 }
 
 /**
@@ -63,7 +63,7 @@ void pidCompute(float left_setpoint, float right_setpoint,
 
     // Apply threshold to avoid ineffective small PWM values
     double finalLeftOutput = leftOutput;
-    if (abs(finalLeftOutput) < THRESHOLD_PWM) {
+    if (abs(finalLeftOutput) < PIDConfig::THRESHOLD) {
         finalLeftOutput = 0.0;
     }
 
@@ -77,7 +77,7 @@ void pidCompute(float left_setpoint, float right_setpoint,
 
     // Apply threshold
     double finalRightOutput = rightOutput;
-    if (abs(finalRightOutput) < THRESHOLD_PWM) {
+    if (abs(finalRightOutput) < PIDConfig::THRESHOLD) {
         finalRightOutput = 0.0;
     }
 
@@ -87,8 +87,8 @@ void pidCompute(float left_setpoint, float right_setpoint,
     }
 
     // Convert to int16_t and clamp to safe range
-    left_output = (int16_t)constrain(finalLeftOutput, PID_OUTPUT_MIN, PID_OUTPUT_MAX);
-    right_output = (int16_t)constrain(finalRightOutput, PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+    left_output = (int16_t)constrain(finalLeftOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
+    right_output = (int16_t)constrain(finalRightOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
 }
 
 /**
