@@ -65,7 +65,7 @@ namespace BSP {
     // -------------------------------------------------------------------------
     // Motor Driver Pins (H-Bridge)
     // -------------------------------------------------------------------------
-    namespace Motor {
+    namespace MotorDriver {
         // Left Motor (Motor A)
         namespace Left {
             constexpr uint8_t PWM_PIN = 25;             // GPIO25 - Left PWM
@@ -131,9 +131,9 @@ namespace Motor {
 // ============================================================================
 namespace PIDConfig {
     // PID Gains (tuned for General Driver Board)
-    constexpr double KP = 20.0;                          // Proportional gain
-    constexpr double KI = 2000.0;                        // Integral gain
-    constexpr double KD = 0.0;                           // Derivative gain
+    constexpr double KP = 30.0;                           // Proportional gain
+    constexpr double KI = 00.0;                           // Integral gain
+    constexpr double KD = 20.0;                           // Derivative gain
 
     // Output Limits (PWM range)
     constexpr double OUTPUT_MIN = -255.0;                // Minimum PID output
