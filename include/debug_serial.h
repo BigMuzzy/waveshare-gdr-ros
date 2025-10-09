@@ -4,17 +4,16 @@
 #include <Arduino.h>
 #include "config.h"
 
-// Use GPIO pins from config.h: Debug::TX_PIN, Debug::RX_PIN
-// Use baud rate from config.h: Debug::BAUD_RATE
+// All GPIO pins and baud rates are defined in BSP::UART::Debug namespace in config.h
 
 // Debug serial object - uses hardware UART2
 extern HardwareSerial DebugSerial;
 
 /**
  * Initialize debug serial port
- * @param baud Baud rate (default from config.h: Debug::BAUD_RATE)
+ * @param baud Baud rate (default from config.h: BSP::UART::Debug::BAUD_RATE)
  */
-void debugSerialInit(unsigned long baud = Debug::BAUD_RATE);
+void debugSerialInit(unsigned long baud = BSP::UART::Debug::BAUD_RATE);
 
 /**
  * Print debug message (same as Serial.print)

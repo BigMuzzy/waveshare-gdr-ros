@@ -1,21 +1,22 @@
 #include "debug_serial.h"
 #include <stdarg.h>
 
-// Use UART2 on custom pins (from config.h)
+// Use UART2 on custom pins (from config.h BSP namespace)
 HardwareSerial DebugSerial(2);
 
 void debugSerialInit(unsigned long baud) {
-    // Initialize UART2 on GPIO pins from config.h
-    DebugSerial.begin(baud, SERIAL_8N1, Debug::RX_PIN, Debug::TX_PIN);
+    // Initialize UART2 on GPIO pins from BSP::UART::Debug namespace
+    DebugSerial.begin(baud, SERIAL_8N1, BSP::UART::Debug::RX_PIN, BSP::UART::Debug::TX_PIN);
 
     // Wait for serial to stabilize (delay from config.h)
-    delay(Debug::INIT_DELAY_MS);
+    delay(BSP::UART::Debug::INIT_DELAY_MS);
 
     // Send startup banner
     DebugSerial.println();
     DebugSerial.println("========================================");
     DebugSerial.println("  General Driver Debug Serial");
-    DebugSerial.printf("  GPIO%d (TX) / GPIO%d (RX)\n", Debug::TX_PIN, Debug::RX_PIN);
+    DebugSerial.printf("  GPIO%d (TX) / GPIO%d (RX)\n",
+                       BSP::UART::Debug::TX_PIN, BSP::UART::Debug::RX_PIN);
     DebugSerial.println("========================================");
     DebugSerial.print("Initialized at ");
     DebugSerial.print(baud);

@@ -7,30 +7,30 @@
  */
 void motorInit() {
     // Configure direction control pins as outputs
-    pinMode(Motor::AIN1_PIN, OUTPUT);
-    pinMode(Motor::AIN2_PIN, OUTPUT);
-    pinMode(Motor::PWMA_PIN, OUTPUT);
-    pinMode(Motor::BIN1_PIN, OUTPUT);
-    pinMode(Motor::BIN2_PIN, OUTPUT);
-    pinMode(Motor::PWMB_PIN, OUTPUT);
+    pinMode(BSP::Motor::Left::DIR1_PIN, OUTPUT);
+    pinMode(BSP::Motor::Left::DIR2_PIN, OUTPUT);
+    pinMode(BSP::Motor::Left::PWM_PIN, OUTPUT);
+    pinMode(BSP::Motor::Right::DIR1_PIN, OUTPUT);
+    pinMode(BSP::Motor::Right::DIR2_PIN, OUTPUT);
+    pinMode(BSP::Motor::Right::PWM_PIN, OUTPUT);
 
     // Setup PWM channels
-    ledcSetup(Motor::PWM_CHANNEL_A, Motor::PWM_FREQUENCY, Motor::PWM_RESOLUTION_BITS);
-    ledcAttachPin(Motor::PWMA_PIN, Motor::PWM_CHANNEL_A);
+    ledcSetup(BSP::Motor::PWM_CHANNEL_A, Motor::PWM_FREQUENCY, Motor::PWM_RESOLUTION_BITS);
+    ledcAttachPin(BSP::Motor::Left::PWM_PIN, BSP::Motor::PWM_CHANNEL_A);
 
-    ledcSetup(Motor::PWM_CHANNEL_B, Motor::PWM_FREQUENCY, Motor::PWM_RESOLUTION_BITS);
-    ledcAttachPin(Motor::PWMB_PIN, Motor::PWM_CHANNEL_B);
+    ledcSetup(BSP::Motor::PWM_CHANNEL_B, Motor::PWM_FREQUENCY, Motor::PWM_RESOLUTION_BITS);
+    ledcAttachPin(BSP::Motor::Right::PWM_PIN, BSP::Motor::PWM_CHANNEL_B);
 
     // Initialize all direction pins to LOW (motors stopped)
-    digitalWrite(Motor::AIN1_PIN, LOW);
-    digitalWrite(Motor::AIN2_PIN, LOW);
-    digitalWrite(Motor::BIN1_PIN, LOW);
-    digitalWrite(Motor::BIN2_PIN, LOW);
+    digitalWrite(BSP::Motor::Left::DIR1_PIN, LOW);
+    digitalWrite(BSP::Motor::Left::DIR2_PIN, LOW);
+    digitalWrite(BSP::Motor::Right::DIR1_PIN, LOW);
+    digitalWrite(BSP::Motor::Right::DIR2_PIN, LOW);
 
     debugLog("MOTOR", "PWM channels configured");
     debugPrintf("[MOTOR] Ch A: GPIO%d (%dkHz), Ch B: GPIO%d (%dkHz)\n",
-                Motor::PWMA_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR,
-                Motor::PWMB_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR);
+                BSP::Motor::Left::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR,
+                BSP::Motor::Right::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR);
 }
 
 /**
@@ -49,39 +49,39 @@ void setMotorSpeed(int16_t left_pwm, int16_t right_pwm) {
     right_pwm = constrain(right_pwm, Motor::PWM_MIN, Motor::PWM_MAX);
 
     // --- Left Motor (Motor A) ---
-    if (abs(left_pwm) < Motor::PWM_DEADZONE) {
+    if (abs(left_pwm) < Motor::THRESHOLD_PWM) {
         // Stop left motor
-        digitalWrite(Motor::AIN1_PIN, LOW);
-        digitalWrite(Motor::AIN2_PIN, LOW);
-        ledcWrite(Motor::PWM_CHANNEL_A, Motor::PWM_ZERO);
+        digitalWrite(BSP::Motor::Left::DIR1_PIN, LOW);
+        digitalWrite(BSP::Motor::Left::DIR2_PIN, LOW);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_A, Motor::PWM_ZERO);
     } else if (left_pwm > Motor::PWM_ZERO) {
-        // Forward: AIN1=LOW, AIN2=HIGH
-        digitalWrite(Motor::AIN1_PIN, LOW);
-        digitalWrite(Motor::AIN2_PIN, HIGH);
-        ledcWrite(Motor::PWM_CHANNEL_A, abs(left_pwm));
+        // Forward: DIR1=LOW, DIR2=HIGH
+        digitalWrite(BSP::Motor::Left::DIR1_PIN, LOW);
+        digitalWrite(BSP::Motor::Left::DIR2_PIN, HIGH);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_A, abs(left_pwm));
     } else {
-        // Reverse: AIN1=HIGH, AIN2=LOW
-        digitalWrite(Motor::AIN1_PIN, HIGH);
-        digitalWrite(Motor::AIN2_PIN, LOW);
-        ledcWrite(Motor::PWM_CHANNEL_A, abs(left_pwm));
+        // Reverse: DIR1=HIGH, DIR2=LOW
+        digitalWrite(BSP::Motor::Left::DIR1_PIN, HIGH);
+        digitalWrite(BSP::Motor::Left::DIR2_PIN, LOW);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_A, abs(left_pwm));
     }
 
     // --- Right Motor (Motor B) ---
-    if (abs(right_pwm) < Motor::PWM_DEADZONE) {
+    if (abs(right_pwm) < Motor::THRESHOLD_PWM) {
         // Stop right motor
-        digitalWrite(Motor::BIN1_PIN, LOW);
-        digitalWrite(Motor::BIN2_PIN, LOW);
-        ledcWrite(Motor::PWM_CHANNEL_B, Motor::PWM_ZERO);
+        digitalWrite(BSP::Motor::Right::DIR1_PIN, LOW);
+        digitalWrite(BSP::Motor::Right::DIR2_PIN, LOW);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_B, Motor::PWM_ZERO);
     } else if (right_pwm > Motor::PWM_ZERO) {
-        // Forward: BIN1=LOW, BIN2=HIGH
-        digitalWrite(Motor::BIN1_PIN, LOW);
-        digitalWrite(Motor::BIN2_PIN, HIGH);
-        ledcWrite(Motor::PWM_CHANNEL_B, abs(right_pwm));
+        // Forward: DIR1=LOW, DIR2=HIGH
+        digitalWrite(BSP::Motor::Right::DIR1_PIN, LOW);
+        digitalWrite(BSP::Motor::Right::DIR2_PIN, HIGH);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_B, abs(right_pwm));
     } else {
-        // Reverse: BIN1=HIGH, BIN2=LOW
-        digitalWrite(Motor::BIN1_PIN, HIGH);
-        digitalWrite(Motor::BIN2_PIN, LOW);
-        ledcWrite(Motor::PWM_CHANNEL_B, abs(right_pwm));
+        // Reverse: DIR1=HIGH, DIR2=LOW
+        digitalWrite(BSP::Motor::Right::DIR1_PIN, HIGH);
+        digitalWrite(BSP::Motor::Right::DIR2_PIN, LOW);
+        ledcWrite(BSP::Motor::PWM_CHANNEL_B, abs(right_pwm));
     }
 }
 
@@ -90,11 +90,11 @@ void setMotorSpeed(int16_t left_pwm, int16_t right_pwm) {
  * Based on reference/general_driver/movtion_module.h::switchEmergencyStop()
  */
 void emergencyStop() {
-    digitalWrite(Motor::AIN1_PIN, HIGH);
-    digitalWrite(Motor::AIN2_PIN, HIGH);
-    digitalWrite(Motor::BIN1_PIN, HIGH);
-    digitalWrite(Motor::BIN2_PIN, HIGH);
+    digitalWrite(BSP::Motor::Left::DIR1_PIN, HIGH);
+    digitalWrite(BSP::Motor::Left::DIR2_PIN, HIGH);
+    digitalWrite(BSP::Motor::Right::DIR1_PIN, HIGH);
+    digitalWrite(BSP::Motor::Right::DIR2_PIN, HIGH);
 
-    ledcWrite(Motor::PWM_CHANNEL_A, Motor::PWM_ZERO);
-    ledcWrite(Motor::PWM_CHANNEL_B, Motor::PWM_ZERO);
+    ledcWrite(BSP::Motor::PWM_CHANNEL_A, Motor::PWM_ZERO);
+    ledcWrite(BSP::Motor::PWM_CHANNEL_B, Motor::PWM_ZERO);
 }

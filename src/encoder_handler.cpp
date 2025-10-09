@@ -24,10 +24,10 @@ void encoderInit() {
     // Enable internal pullup resistors for ESP32Encoder
     ESP32Encoder::useInternalWeakPullResistors = puType::up;
 
-    // Attach encoders in half-quadrature mode
+    // Attach encoders in half-quadrature mode (using BSP pin definitions)
     // Half-quad uses only one channel (A), with B for direction
-    encoderLeft.attachHalfQuad(Encoder::LEFT_A_PIN, Encoder::LEFT_B_PIN);
-    encoderRight.attachHalfQuad(Encoder::RIGHT_A_PIN, Encoder::RIGHT_B_PIN);
+    encoderLeft.attachHalfQuad(BSP::Encoder::Left::A_PIN, BSP::Encoder::Left::B_PIN);
+    encoderRight.attachHalfQuad(BSP::Encoder::Right::A_PIN, BSP::Encoder::Right::B_PIN);
 
     // Clear encoder counts
     encoderLeft.setCount(0);
@@ -42,8 +42,8 @@ void encoderInit() {
 
     debugLog("ENCODER", "Initialized (half-quad mode)");
     debugPrintf("[ENCODER] Left: GPIO%d/%d, Right: GPIO%d/%d\n",
-                Encoder::LEFT_A_PIN, Encoder::LEFT_B_PIN,
-                Encoder::RIGHT_A_PIN, Encoder::RIGHT_B_PIN);
+                BSP::Encoder::Left::A_PIN, BSP::Encoder::Left::B_PIN,
+                BSP::Encoder::Right::A_PIN, BSP::Encoder::Right::B_PIN);
     debugPrintf("[ENCODER] Pulses/rev: %d, Wheel dia: %.3fm\n",
                 Encoder::PULSES_PER_REV, Robot::WHEEL_DIAMETER_M);
 }
