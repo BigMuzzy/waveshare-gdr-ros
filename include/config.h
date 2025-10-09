@@ -118,10 +118,6 @@ namespace Motor {
     constexpr int16_t PWM_ZERO = 0;                      // Zero PWM (stopped)
     constexpr int16_t THRESHOLD_PWM = 23;                // Minimum effective PWM
 
-    // Speed Limits
-    constexpr float MAX_SPEED_MPS = 2.0f;                // Maximum speed (m/s)
-    constexpr float MIN_SPEED_MPS = -2.0f;               // Minimum speed (m/s)
-
     // Debug/Display
     constexpr uint32_t KHZ_DIVISOR = 1000;               // Convert Hz to kHz
 }
@@ -151,7 +147,7 @@ namespace PIDConfig {
 // ============================================================================
 namespace Encoder {
     // Encoder Specifications
-    constexpr int32_t PULSES_PER_REV = 1170;             // Encoder pulses per wheel revolution
+    constexpr int32_t PULSES_PER_REV = 1167;             // Encoder pulses per wheel revolution
 
     // Timing & Thresholds
     constexpr uint32_t SPEED_UPDATE_US = 10000;          // Speed calculation interval (10ms)
@@ -164,7 +160,7 @@ namespace Encoder {
 // ============================================================================
 namespace Robot {
     // Wheel Specifications
-    constexpr double WHEEL_DIAMETER_M = 0.065;           // Wheel diameter in meters (65mm)
+    constexpr double WHEEL_DIAMETER_M = 0.068;           // Wheel diameter in meters (68mm)
     constexpr double WHEEL_BASE_M = 0.200;               // Distance between wheels (200mm)
 
     // Calculated Constants
@@ -172,7 +168,7 @@ namespace Robot {
     constexpr double METERS_PER_PULSE = WHEEL_CIRCUMFERENCE / Encoder::PULSES_PER_REV;
 
     // Kinematic Limits
-    constexpr float MAX_LINEAR_SPEED = 0.5f;             // Maximum linear speed (m/s)
+    constexpr float MAX_LINEAR_SPEED = 0.463f;             // Maximum linear speed (m/s)
     constexpr float MAX_ANGULAR_SPEED = 2.0f;            // Maximum angular speed (rad/s)
 }
 
