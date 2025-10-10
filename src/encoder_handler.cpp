@@ -26,8 +26,8 @@ void encoderInit() {
 
     // Attach encoders in half-quadrature mode (using BSP pin definitions)
     // Half-quad uses only one channel (A), with B for direction
-    encoderLeft.attachHalfQuad(BSP::Encoder::Left::A_PIN, BSP::Encoder::Left::B_PIN);
-    encoderRight.attachHalfQuad(BSP::Encoder::Right::A_PIN, BSP::Encoder::Right::B_PIN);
+    encoderLeft.attachHalfQuad(BSP::Encoder::Left::B_PIN, BSP::Encoder::Left::A_PIN);
+    encoderRight.attachHalfQuad(BSP::Encoder::Right::B_PIN, BSP::Encoder::Right::A_PIN);
 
     // Clear encoder counts
     encoderLeft.setCount(0);
@@ -75,6 +75,7 @@ void getWheelSpeeds(float &left_speed, float &right_speed) {
 
     // Calculate time delta in seconds
     float deltaTime = (float)(currentTime - lastTime) / 1000000.0;
+    debugPrintf("delta t: %f | ", deltaTime);
 
     // Prevent division by zero (minimum time delta from config)
     if (deltaTime > Encoder::MIN_DELTA_TIME) {
@@ -96,6 +97,7 @@ void getWheelSpeeds(float &left_speed, float &right_speed) {
     // Return calculated speeds
     left_speed = speedLeft;
     right_speed = speedRight;
+    debugPrintf("left speed: %f | right speed %f\n", left_speed, right_speed);
 }
 
 /**

@@ -89,6 +89,8 @@ void pidCompute(float left_setpoint, float right_setpoint,
     // Convert to int16_t and clamp to safe range
     left_output = (int16_t)constrain(finalLeftOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
     right_output = (int16_t)constrain(finalRightOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
+
+    debugPrintf("right pwm %i | rsp: %f | rcs %f\n", right_output, right_setpoint, right_speed);
 }
 
 /**

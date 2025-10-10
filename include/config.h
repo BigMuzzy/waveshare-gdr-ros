@@ -116,7 +116,7 @@ namespace Motor {
     constexpr int16_t PWM_MAX = 255;                     // Maximum PWM value
     constexpr int16_t PWM_MIN = -255;                    // Minimum PWM value (negative = reverse)
     constexpr int16_t PWM_ZERO = 0;                      // Zero PWM (stopped)
-    constexpr int16_t THRESHOLD_PWM = 23;                // Minimum effective PWM
+    constexpr int16_t THRESHOLD_PWM = 10;                // Minimum effective PWM
 
     // Debug/Display
     constexpr uint32_t KHZ_DIVISOR = 1000;               // Convert Hz to kHz
@@ -127,9 +127,9 @@ namespace Motor {
 // ============================================================================
 namespace PIDConfig {
     // PID Gains (tuned for General Driver Board)
-    constexpr double KP = 30.0;                           // Proportional gain
+    constexpr double KP = 50.0;                           // Proportional gain
     constexpr double KI = 00.0;                           // Integral gain
-    constexpr double KD = 20.0;                           // Derivative gain
+    constexpr double KD = 00.0;                           // Derivative gain
 
     // Output Limits (PWM range)
     constexpr double OUTPUT_MIN = -255.0;                // Minimum PID output
