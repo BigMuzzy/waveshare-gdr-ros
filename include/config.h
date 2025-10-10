@@ -127,8 +127,8 @@ namespace Motor {
 // ============================================================================
 namespace PIDConfig {
     // PID Gains (tuned for General Driver Board)
-    constexpr double KP = 50.0;                           // Proportional gain
-    constexpr double KI = 00.0;                           // Integral gain
+    constexpr double KP = 20.0;                           // Proportional gain
+    constexpr double KI = 300.0;                          // Integral gain
     constexpr double KD = 00.0;                           // Derivative gain
 
     // Output Limits (PWM range)

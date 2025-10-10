@@ -3,6 +3,7 @@
 #include "kinematics.h"
 #include "debug_serial.h"
 #include "config.h"
+#include "pid_controller.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -51,6 +52,7 @@ rcl_publisher_t encoder_pub;
 // Subscribers
 rcl_subscription_t cmd_vel_sub;
 rcl_subscription_t motor_enable_sub;
+rcl_subscription_t pid_config_sub;
 
 /* ------------------------ */
 /* --- ROS Msg Declare --- */
@@ -62,6 +64,10 @@ std_msgs__msg__Int32MultiArray encoder_msg;
 // Subscriber messages
 geometry_msgs__msg__Twist cmd_vel_msg;
 std_msgs__msg__Bool motor_enable_msg;
+std_msgs__msg__Float32MultiArray pid_config_msg;
+
+// PID config storage
+static float pid_gains[3];
 
 /* -------------------- */
 /* --- ROS Msg init --- */
@@ -108,6 +114,11 @@ void init_ros_msgs() {
     cmd_vel_msg.angular.x = 0.0;
     cmd_vel_msg.angular.y = 0.0;
     cmd_vel_msg.angular.z = 0.0;
+
+    // Initialize PID config message
+    pid_config_msg.data.capacity = 3;
+    pid_config_msg.data.size = 3;
+    pid_config_msg.data.data = pid_gains;
 }
 
 /* ------------------------ */
@@ -128,6 +139,16 @@ void motor_enable_callback(const void *msgin) {
         cmd_linear_x = 0.0;
         cmd_angular_z = 0.0;
     }
+}
+
+void pid_config_callback(const void *msgin) {
+    const std_msgs__msg__Float32MultiArray *msg = (const std_msgs__msg__Float32MultiArray *)msgin;
+
+    float kp = msg->data.data[0];
+    float ki = msg->data.data[1];
+    float kd = msg->data.data[2];
+
+    setPIDTunings(kp, ki, kd);
 }
 
 /* -------------------------- */
@@ -249,15 +270,23 @@ bool create_entities() {
         ROS::TOPIC_MOTOR_ENABLE,
         &rmw_qos_profile_default);
 
+    rclc_subscription_init(
+        &pid_config_sub,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
+        "/ugv/pid_config",
+        &rmw_qos_profile_default);
+
     // Timer configuration (from config.h)
     ret = rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(ROS::TIMER_PERIOD_MS), timer_callback);
 
     // Executor configuration (from config.h)
-    unsigned int num_handles = ROS::NUM_HANDLES;
+    unsigned int num_handles = ROS::NUM_HANDLES + 1;
     executor = rclc_executor_get_zero_initialized_executor();
     rclc_executor_init(&executor, &support.context, num_handles, &allocator);
     rclc_executor_add_subscription(&executor, &cmd_vel_sub, &cmd_vel_msg, &cmd_vel_callback, ON_NEW_DATA);
     rclc_executor_add_subscription(&executor, &motor_enable_sub, &motor_enable_msg, &motor_enable_callback, ON_NEW_DATA);
+    rclc_executor_add_subscription(&executor, &pid_config_sub, &pid_config_msg, &pid_config_callback, ON_NEW_DATA);
     rclc_executor_add_timer(&executor, &timer);
 
     return true;
@@ -280,6 +309,7 @@ void destroy_entities() {
 
     ret = rcl_subscription_fini(&cmd_vel_sub, &node);
     ret = rcl_subscription_fini(&motor_enable_sub, &node);
+    ret = rcl_subscription_fini(&pid_config_sub, &node);
 }
 
 void ros_loop() {

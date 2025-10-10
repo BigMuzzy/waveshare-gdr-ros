@@ -12,6 +12,7 @@
 
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/float32_multi_array.h>
 #include <geometry_msgs/msg/twist.h>
 #include <nav_msgs/msg/odometry.h>
 #include <sensor_msgs/msg/imu.h>
@@ -32,5 +33,6 @@ void init_ros_msgs();
 bool create_entities();
 void destroy_entities();
 void ros_loop();
+void pid_config_callback(const void *msgin);
 
 #endif

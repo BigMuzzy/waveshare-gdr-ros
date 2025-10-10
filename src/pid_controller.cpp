@@ -50,48 +50,39 @@ void pidCompute(float left_setpoint, float right_setpoint,
                 float left_speed, float right_speed,
                 int16_t &left_output, int16_t &right_output) {
 
-    // Update setpoints
+    // --- FEEDFORWARD: Direct speed → PWM mapping ---
+    // Your motor needs ~255 PWM for 0.463 m/s max speed
+    const float FEEDFORWARD_GAIN = 255.0 / 0.463;  // ≈ 550 PWM per m/s
+    
+    float ff_left = left_setpoint * FEEDFORWARD_GAIN;
+    float ff_right = right_setpoint * FEEDFORWARD_GAIN;
+    
+    // --- PID: Correct errors ---
     leftSetpoint = left_setpoint;
     rightSetpoint = right_setpoint;
-
-    // Update inputs (actual speeds)
     leftInput = left_speed;
     rightInput = right_speed;
-
-    // --- Compute Left PID ---
-    pidLeft.Compute();  // Updates leftOutput variable
-
-    // Apply threshold to avoid ineffective small PWM values
-    double finalLeftOutput = leftOutput;
-    if (abs(finalLeftOutput) < PIDConfig::THRESHOLD) {
-        finalLeftOutput = 0.0;
-    }
-
-    // If both setpoint and actual speed are zero, force output to zero
-    if (leftSetpoint == 0.0 && left_speed == 0.0) {
-        finalLeftOutput = 0.0;
-    }
-
-    // --- Compute Right PID ---
-    pidRight.Compute();  // Updates rightOutput variable
-
-    // Apply threshold
-    double finalRightOutput = rightOutput;
-    if (abs(finalRightOutput) < PIDConfig::THRESHOLD) {
-        finalRightOutput = 0.0;
-    }
-
-    // If both setpoint and actual speed are zero, force output to zero
-    if (rightSetpoint == 0.0 && right_speed == 0.0) {
-        finalRightOutput = 0.0;
-    }
-
-    // Convert to int16_t and clamp to safe range
+    
+    pidLeft.Compute();
+    pidRight.Compute();
+    
+    // --- COMBINE: Feedforward + PID correction ---
+    double finalLeftOutput = ff_left + leftOutput;
+    double finalRightOutput = ff_right + rightOutput;
+    
+    // Apply threshold and limits
+    if (abs(finalLeftOutput) < PIDConfig::THRESHOLD) finalLeftOutput = 0.0;
+    if (abs(finalRightOutput) < PIDConfig::THRESHOLD) finalRightOutput = 0.0;
+    
+    if (leftSetpoint == 0.0 && left_speed == 0.0) finalLeftOutput = 0.0;
+    if (rightSetpoint == 0.0 && right_speed == 0.0) finalRightOutput = 0.0;
+    
     left_output = (int16_t)constrain(finalLeftOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
     right_output = (int16_t)constrain(finalRightOutput, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
 
     debugPrintf("right pwm %i | rsp: %f | rcs %f\n", right_output, right_setpoint, right_speed);
 }
+
 
 /**
  * Reset PID controllers (clear integral windup)
