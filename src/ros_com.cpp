@@ -4,6 +4,7 @@
 #include "debug_serial.h"
 #include "config.h"
 #include "pid_controller.h"
+#include "imu_handler.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -51,6 +52,7 @@ rcl_allocator_t allocator;
 // Publishers
 rcl_publisher_t odom_pub;
 rcl_publisher_t encoder_pub;
+rcl_publisher_t imu_pub;
 
 // Subscribers
 rcl_subscription_t cmd_vel_sub;
@@ -63,6 +65,7 @@ rcl_subscription_t pid_config_sub;
 // Publisher messages
 nav_msgs__msg__Odometry odom_msg;
 std_msgs__msg__Int32MultiArray encoder_msg;
+sensor_msgs__msg__Imu imu_msg;
 
 // Subscriber messages
 geometry_msgs__msg__Twist cmd_vel_msg;
@@ -122,6 +125,30 @@ void init_ros_msgs() {
     pid_config_msg.data.capacity = 3;
     pid_config_msg.data.size = 3;
     pid_config_msg.data.data = pid_gains;
+
+    // Initialize IMU message
+    imu_msg.header.frame_id.data = const_cast<char*>(ROS::FRAME_ID_BASE_LINK);
+
+    imu_msg.orientation.x = 0.0;
+    imu_msg.orientation.y = 0.0;
+    imu_msg.orientation.z = 0.0;
+    imu_msg.orientation.w = 1.0;
+
+    imu_msg.angular_velocity.x = 0.0;
+    imu_msg.angular_velocity.y = 0.0;
+    imu_msg.angular_velocity.z = 0.0;
+
+    imu_msg.linear_acceleration.x = 0.0;
+    imu_msg.linear_acceleration.y = 0.0;
+    imu_msg.linear_acceleration.z = 0.0;
+
+    // Initialize covariance matrices (9 elements each)
+    // Set -1 for unknown orientation covariance (no magnetometer/fusion)
+    for (int i = 0; i < 9; i++) {
+        imu_msg.orientation_covariance[i] = -1.0;
+        imu_msg.angular_velocity_covariance[i] = 0.0;
+        imu_msg.linear_acceleration_covariance[i] = 0.0;
+    }
 }
 
 /* ------------------------ */
@@ -155,6 +182,46 @@ void pid_config_callback(const void *msgin) {
     float kd = msg->data.data[2];
 
     set_pid_tunings(kp, ki, kd);
+}
+
+/* -------------------------- */
+/* --- IMU Data Publisher --- */
+/* -------------------------- */
+void publish_imu_data() {
+    // Check if IMU is ready before attempting to read
+    if (!is_imu_ready()) {
+        return;
+    }
+
+    // Read IMU sensor data
+    float accel[3], gyro[3];
+    if (!imu_read(accel, gyro)) {
+        // Read failed, skip this update
+        return;
+    }
+
+    // Update timestamp
+    int64_t time_ns = rmw_uros_epoch_nanos();
+    imu_msg.header.stamp.sec = (int32_t)(time_ns / 1000000000);
+    imu_msg.header.stamp.nanosec = (uint32_t)(time_ns % 1000000000);
+
+    // Update linear acceleration (m/s²)
+    imu_msg.linear_acceleration.x = accel[0];
+    imu_msg.linear_acceleration.y = accel[1];
+    imu_msg.linear_acceleration.z = accel[2];
+
+    // Update angular velocity (rad/s)
+    imu_msg.angular_velocity.x = gyro[0];
+    imu_msg.angular_velocity.y = gyro[1];
+    imu_msg.angular_velocity.z = gyro[2];
+
+    // Orientation is not computed (no magnetometer/fusion)
+    // Quaternion remains identity: (0, 0, 0, 1)
+    // Covariance is -1 to indicate "unknown" per ROS convention
+
+    // Publish IMU message
+    rcl_ret_t ret = rcl_publish(&imu_pub, &imu_msg, NULL);
+    (void)ret; // Suppress unused variable warning
 }
 
 /* -------------------------- */
@@ -215,6 +282,9 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
         encoder_msg.data.data[0] = current_left;
         encoder_msg.data.data[1] = current_right;
         ret = rcl_publish(&encoder_pub, &encoder_msg, NULL);
+
+        // Publish IMU data
+        publish_imu_data();
     }
 }
 
@@ -256,6 +326,13 @@ bool create_entities() {
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
         ROS::TOPIC_ENCODER,
+        &rmw_qos_profile_default);
+
+    rclc_publisher_init(
+        &imu_pub,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
+        "/ugv/imu",
         &rmw_qos_profile_default);
 
     /* -------------------- */
@@ -312,6 +389,7 @@ void destroy_entities() {
 
     ret = rcl_publisher_fini(&odom_pub, &node);
     ret = rcl_publisher_fini(&encoder_pub, &node);
+    ret = rcl_publisher_fini(&imu_pub, &node);
 
     ret = rcl_subscription_fini(&cmd_vel_sub, &node);
     ret = rcl_subscription_fini(&motor_enable_sub, &node);

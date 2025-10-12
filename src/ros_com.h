@@ -34,6 +34,7 @@ bool create_entities();
 void destroy_entities();
 void ros_loop();
 void pid_config_callback(const void *msgin);
+void publish_imu_data();
 
 /**
  * @brief Check if cmd_vel has timed out

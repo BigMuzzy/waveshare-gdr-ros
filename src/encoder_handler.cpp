@@ -75,7 +75,7 @@ void get_wheel_speeds(float &left_speed, float &right_speed) {
 
     // Calculate time delta in seconds
     float deltaTime = (float)(currentTime - last_time_us) / 1000000.0;
-    debug_printf("delta t: %f | ", deltaTime);
+    //debug_printf("delta t: %f | ", deltaTime);
 
     // Prevent division by zero (minimum time delta from config)
     if (deltaTime > Encoder::MIN_DELTA_TIME) {
@@ -97,7 +97,7 @@ void get_wheel_speeds(float &left_speed, float &right_speed) {
     // Return calculated speeds
     left_speed = speed_left;
     right_speed = speed_right;
-    debug_printf("left speed: %f | right speed %f\n", left_speed, right_speed);
+    //debug_printf("left speed: %f | right speed %f\n", left_speed, right_speed);
 }
 
 /**

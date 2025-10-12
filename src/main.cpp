@@ -5,6 +5,7 @@
 #include "pid_controller.h"
 #include "kinematics.h"
 #include "debug_serial.h"
+#include "imu_handler.h"
 
 // Global variables for control loop
 float target_left_speed = 0.0;   // Target speed for left wheel (m/s)
@@ -37,6 +38,10 @@ void setup() {
 
     debug_log("INIT", "Initializing PID...");
     pid_init();          // PID controller initialization
+
+    debug_log("INIT", "Initializing IMU...");
+    imu_init();          // IMU sensor initialization
+    imu_calibrate();     // Auto-calibration (robot must be stationary!)
 
     // Reset encoders to zero
     reset_encoders();

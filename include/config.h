@@ -214,19 +214,32 @@ namespace ROS {
 }
 
 // ============================================================================
-// IMU CONFIGURATION (QMI8658C + AK09918)
+// IMU CONFIGURATION (QMI8658C)
 // ============================================================================
 namespace IMU {
+    // I2C Configuration
+    constexpr uint8_t I2C_ADDRESS = 0x6B;                // QMI8658C I2C address
+    constexpr uint32_t I2C_CLOCK = 400000;               // 400kHz I2C clock
+    constexpr uint8_t I2C_SDA_PIN = BSP::I2C::SDA_PIN;   // GPIO 32
+    constexpr uint8_t I2C_SCL_PIN = BSP::I2C::SCL_PIN;   // GPIO 33
+
+    // Sensor Configuration
+    constexpr float ACCEL_RANGE_G = 16.0f;               // ±16g accelerometer range
+    constexpr float GYRO_RANGE_DPS = 2048.0f;            // ±2048 degrees/sec gyro range
+    constexpr uint16_t ODR_HZ = 1000;                    // 1000Hz output data rate
+
     // Calibration Parameters
     constexpr uint8_t CALIBRATION_SAMPLES = 50;          // Samples for auto-calibration
-    constexpr uint32_t CALIBRATION_DELAY_MS = 10;        // Delay between samples
+    constexpr uint32_t CALIBRATION_DELAY_MS = 10;        // Delay between calibration samples
+    constexpr float GRAVITY_MS2 = 9.80665f;              // Standard gravity (m/s²)
 
-    // Physical Constants
-    constexpr double GRAVITY_MPS2 = 9.80665;             // Standard gravity (m/s²)
-    constexpr double GRAVITY_OFFSET = 980.0;             // Z-axis gravity compensation
+    // Conversion Factors (raw sensor value to physical units)
+    constexpr float ACCEL_SCALE = ACCEL_RANGE_G / 32768.0f;           // LSB to g, then *9.8 for m/s²
+    constexpr float GYRO_SCALE = (GYRO_RANGE_DPS / 32768.0f) *        // LSB to dps
+                                 (3.14159265359f / 180.0f);            // dps to rad/s
 
-    // Update Rate
-    constexpr uint32_t UPDATE_INTERVAL_MS = 20;          // 50Hz IMU update rate
+    // Update Rate (controlled by ROS timer in ros_com.cpp)
+    constexpr uint32_t UPDATE_INTERVAL_MS = 50;          // 20Hz IMU publish rate (matches ROS timer)
 }
 
 // ============================================================================
