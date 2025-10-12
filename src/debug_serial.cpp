@@ -1,10 +1,18 @@
+/**
+ * @file debug_serial.cpp
+ * @brief Debug serial implementation using UART2
+ *
+ * Provides dedicated debug output on separate UART to avoid conflicts
+ * with micro-ROS Serial transport.
+ */
+
 #include "debug_serial.h"
 #include <stdarg.h>
 
 // Use UART2 on custom pins (from config.h BSP namespace)
 HardwareSerial DebugSerial(2);
 
-void debugSerialInit(unsigned long baud) {
+void debug_serial_init(unsigned long baud) {
     // Initialize UART2 on GPIO pins from BSP::UART::Debug namespace
     DebugSerial.begin(baud, SERIAL_8N1, BSP::UART::Debug::RX_PIN, BSP::UART::Debug::TX_PIN);
 
@@ -24,35 +32,35 @@ void debugSerialInit(unsigned long baud) {
     DebugSerial.println();
 }
 
-void debugPrint(const char* msg) {
+void debug_print(const char* msg) {
     DebugSerial.print(msg);
 }
 
-void debugPrint(int val) {
+void debug_print(int val) {
     DebugSerial.print(val);
 }
 
-void debugPrint(float val) {
+void debug_print(float val) {
     DebugSerial.print(val);
 }
 
-void debugPrintln(const char* msg) {
+void debug_println(const char* msg) {
     DebugSerial.println(msg);
 }
 
-void debugPrintln(int val) {
+void debug_println(int val) {
     DebugSerial.println(val);
 }
 
-void debugPrintln(float val) {
+void debug_println(float val) {
     DebugSerial.println(val);
 }
 
-void debugPrintln() {
+void debug_println() {
     DebugSerial.println();
 }
 
-void debugPrintf(const char* format, ...) {
+void debug_printf(const char* format, ...) {
     char buffer[256];
     va_list args;
     va_start(args, format);
@@ -61,11 +69,11 @@ void debugPrintf(const char* format, ...) {
     DebugSerial.print(buffer);
 }
 
-void debugLog(const char* tag, const char* msg) {
+void debug_log(const char* tag, const char* msg) {
     unsigned long timestamp = millis();
-    debugPrintf("[%7lu] [%s] %s\n", timestamp, tag, msg);
+    debug_printf("[%7lu] [%s] %s\n", timestamp, tag, msg);
 }
 
-bool debugSerialAvailable() {
+bool debug_serial_available() {
     return DebugSerial.available() > 0;
 }

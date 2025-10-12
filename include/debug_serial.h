@@ -4,53 +4,64 @@
 #include <Arduino.h>
 #include "config.h"
 
-// All GPIO pins and baud rates are defined in BSP::UART::Debug namespace in config.h
+/**
+ * @file debug_serial.h
+ * @brief Debug serial interface using dedicated UART2
+ *
+ * Provides debug logging on separate UART pins to avoid conflicts with
+ * micro-ROS Serial transport. Uses GPIO5 (TX) and GPIO4 (RX).
+ */
 
 // Debug serial object - uses hardware UART2
 extern HardwareSerial DebugSerial;
 
 /**
- * Initialize debug serial port
- * @param baud Baud rate (default from config.h: BSP::UART::Debug::BAUD_RATE)
+ * @brief Initialize debug serial port
+ * @param baud Baud rate (default: 115200 from config.h)
+ *
+ * Configures UART2 on dedicated GPIO pins for debug output.
+ * Safe to call even when main Serial is used by micro-ROS.
  */
-void debugSerialInit(unsigned long baud = BSP::UART::Debug::BAUD_RATE);
+void debug_serial_init(unsigned long baud = BSP::UART::Debug::BAUD_RATE);
 
 /**
- * Print debug message (same as Serial.print)
+ * @brief Print debug message (same as Serial.print)
  */
-void debugPrint(const char* msg);
-void debugPrint(int val);
-void debugPrint(float val);
+void debug_print(const char* msg);
+void debug_print(int val);
+void debug_print(float val);
 
 /**
- * Print debug message with newline (same as Serial.println)
+ * @brief Print debug message with newline (same as Serial.println)
  */
-void debugPrintln(const char* msg);
-void debugPrintln(int val);
-void debugPrintln(float val);
-void debugPrintln();
+void debug_println(const char* msg);
+void debug_println(int val);
+void debug_println(float val);
+void debug_println();
 
 /**
- * Printf-style formatted debug output
+ * @brief Printf-style formatted debug output
  * @param format Printf format string
  * @param ... Variable arguments
  *
- * Example: debugPrintf("Encoder: L=%d R=%d\n", left, right);
+ * Example: debug_printf("Encoder: L=%d R=%d\n", left, right);
  */
-void debugPrintf(const char* format, ...);
+void debug_printf(const char* format, ...);
 
 /**
- * Log with timestamp
+ * @brief Log message with timestamp and tag
  * @param tag Category tag (e.g., "MOTOR", "IMU", "PID")
  * @param msg Message to log
  *
- * Example: debugLog("ENCODER", "Left overflow detected");
+ * Outputs: [timestamp] [TAG] message
+ * Example: debug_log("ENCODER", "Left overflow detected");
  */
-void debugLog(const char* tag, const char* msg);
+void debug_log(const char* tag, const char* msg);
 
 /**
- * Check if debug serial is available (for conditional debugging)
+ * @brief Check if debug serial has data available
+ * @return true if data available to read
  */
-bool debugSerialAvailable();
+bool debug_serial_available();
 
 #endif // DEBUG_SERIAL_H

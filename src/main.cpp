@@ -12,37 +12,37 @@ float target_right_speed = 0.0;  // Target speed for right wheel (m/s)
 
 void setup() {
     // Initialize debug serial FIRST (for early debugging on GPIO5/4)
-    debugSerialInit(BSP::UART::Debug::BAUD_RATE);
-    debugLog("INIT", "System starting...");
+    debug_serial_init(BSP::UART::Debug::BAUD_RATE);
+    debug_log("INIT", "System starting...");
 
     // Initialize Serial for micro-ROS (CP2102 USB-UART bridge)
     Serial.begin(BSP::UART::BAUD_RATE);
     delay(BSP::UART::INIT_DELAY_MS);
 
     // Initialize micro-ROS transport over Serial
-    debugLog("INIT", "Setting up micro-ROS transport...");
+    debug_log("INIT", "Setting up micro-ROS transport...");
     set_microros_serial_transports(Serial);
     delay(BSP::UART::INIT_DELAY_MS);
 
     // Initialize ROS messages
-    debugLog("INIT", "Initializing ROS messages...");
+    debug_log("INIT", "Initializing ROS messages...");
     init_ros_msgs();
 
     // Initialize hardware components
-    debugLog("INIT", "Initializing motors...");
-    motorInit();        // H-bridge PWM setup
+    debug_log("INIT", "Initializing motors...");
+    motor_init();        // H-bridge PWM setup
 
-    debugLog("INIT", "Initializing encoders...");
-    encoderInit();      // Encoder interrupt setup
+    debug_log("INIT", "Initializing encoders...");
+    encoder_init();      // Encoder interrupt setup
 
-    debugLog("INIT", "Initializing PID...");
-    pidInit();          // PID controller initialization
+    debug_log("INIT", "Initializing PID...");
+    pid_init();          // PID controller initialization
 
     // Reset encoders to zero
-    resetEncoders();
+    reset_encoders();
 
-    debugLog("INIT", "System ready!");
-    debugPrintln();
+    debug_log("INIT", "System ready!");
+    debug_println();
 }
 
 void loop() {
@@ -52,27 +52,27 @@ void loop() {
     // Control loop - only run when ROS agent is connected
     if (state_connected) {
         // 1. Convert cmd_vel to individual wheel speeds using differential drive kinematics
-        twistToWheelSpeeds(cmd_linear_x, cmd_angular_z,
+        twist_to_wheel_speeds(cmd_linear_x, cmd_angular_z,
                           target_left_speed, target_right_speed);
 
         // 2. Read actual wheel speeds from encoders
         float actual_left_speed, actual_right_speed;
-        getWheelSpeeds(actual_left_speed, actual_right_speed);
+        get_wheel_speeds(actual_left_speed, actual_right_speed);
 
         // 3. Compute PID control to calculate PWM outputs
         int16_t left_pwm, right_pwm;
-        pidCompute(target_left_speed, target_right_speed,
+        pid_compute(target_left_speed, target_right_speed,
                    actual_left_speed, actual_right_speed,
                    left_pwm, right_pwm);
 
         // 4. Apply motor commands (if motors are enabled)
         if (motor_enabled) {
-            setMotorSpeed(left_pwm, right_pwm);
+            set_motor_speed(left_pwm, right_pwm);
         } else {
-            emergencyStop();
+            emergency_stop();
         }
     } else {
         // When disconnected from ROS agent, stop motors for safety
-        emergencyStop();
+        emergency_stop();
     }
 }

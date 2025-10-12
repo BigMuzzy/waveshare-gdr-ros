@@ -22,7 +22,7 @@
  *   left_speed  = linear_x - (angular_z * wheelbase / 2)
  *   right_speed = linear_x + (angular_z * wheelbase / 2)
  */
-void twistToWheelSpeeds(float linear_x, float angular_z,
+void twist_to_wheel_speeds(float linear_x, float angular_z,
                         float &left_speed, float &right_speed);
 
 /**
@@ -37,7 +37,7 @@ void twistToWheelSpeeds(float linear_x, float angular_z,
  *   linear_x  = (left_speed + right_speed) / 2
  *   angular_z = (right_speed - left_speed) / wheelbase
  */
-void wheelSpeedsToTwist(float left_speed, float right_speed,
+void wheel_speeds_to_twist(float left_speed, float right_speed,
                         float &linear_x, float &angular_z);
 
 /**
@@ -54,7 +54,7 @@ void wheelSpeedsToTwist(float left_speed, float right_speed,
  * 2. Calculate robot displacement (delta_s) and rotation (delta_theta)
  * 3. Update pose using current heading for proper 2D integration
  */
-void updateOdometry(int32_t left_delta, int32_t right_delta,
+void update_odometry(int32_t left_delta, int32_t right_delta,
                    float &x, float &y, float &theta);
 
 #endif // KINEMATICS_H

@@ -148,7 +148,7 @@ void pid_config_callback(const void *msgin) {
     float ki = msg->data.data[1];
     float kd = msg->data.data[2];
 
-    setPIDTunings(kp, ki, kd);
+    set_pid_tunings(kp, ki, kd);
 }
 
 /* -------------------------- */
@@ -163,14 +163,14 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
 
         // Get real encoder counts from hardware
         int32_t current_left, current_right;
-        getEncoderCounts(current_left, current_right);
+        get_encoder_counts(current_left, current_right);
 
         // Calculate encoder deltas since last update
         int32_t delta_left = current_left - last_encoder_left;
         int32_t delta_right = current_right - last_encoder_right;
 
         // Update odometry using real encoder data and kinematics
-        updateOdometry(delta_left, delta_right, odom_x, odom_y, odom_theta);
+        update_odometry(delta_left, delta_right, odom_x, odom_y, odom_theta);
 
         // Save current encoder counts for next iteration
         last_encoder_left = current_left;
@@ -178,11 +178,11 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
 
         // Get current wheel speeds for twist velocity
         float left_speed, right_speed;
-        getWheelSpeeds(left_speed, right_speed);
+        get_wheel_speeds(left_speed, right_speed);
 
         // Convert wheel speeds to twist (linear_x, angular_z)
         float linear_x, angular_z;
-        wheelSpeedsToTwist(left_speed, right_speed, linear_x, angular_z);
+        wheel_speeds_to_twist(left_speed, right_speed, linear_x, angular_z);
 
         // Publish Odometry with real data
         int64_t time_ns = rmw_uros_epoch_nanos();

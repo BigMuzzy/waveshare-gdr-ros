@@ -9,16 +9,16 @@
 // Robot physical parameters: Robot::WHEEL_DIAMETER_M, Robot::WHEEL_BASE_M, etc.
 
 // Encoder initialization
-void encoderInit();
+void encoder_init();
 
 // Get raw encoder counts
-void getEncoderCounts(int32_t &left, int32_t &right);
+void get_encoder_counts(int32_t &left, int32_t &right);
 
 // Get wheel speeds in m/s
-void getWheelSpeeds(float &left_speed, float &right_speed);
+void get_wheel_speeds(float &left_speed, float &right_speed);
 
 // Reset encoder counts to zero
-void resetEncoders();
+void reset_encoders();
 
 // Global encoder objects
 extern ESP32Encoder encoderLeft;

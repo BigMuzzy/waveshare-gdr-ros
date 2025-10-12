@@ -1,11 +1,15 @@
+/**
+ * @file motor_control.cpp
+ * @brief Motor PWM control and direction management implementation
+ *
+ * Implements H-bridge motor control using ESP32 LEDC peripheral.
+ * Based on reference/general_driver/movtion_module.h
+ */
+
 #include "motor_control.h"
 #include "debug_serial.h"
 
-/**
- * Initialize motor control pins and PWM channels
- * Based on reference/general_driver/movtion_module.h::movtionPinInit()
- */
-void motorInit() {
+void motor_init() {
     // Configure direction control pins as outputs
     pinMode(BSP::MotorDriver::Left::DIR1_PIN, OUTPUT);
     pinMode(BSP::MotorDriver::Left::DIR2_PIN, OUTPUT);
@@ -27,23 +31,13 @@ void motorInit() {
     digitalWrite(BSP::MotorDriver::Right::DIR1_PIN, LOW);
     digitalWrite(BSP::MotorDriver::Right::DIR2_PIN, LOW);
 
-    debugLog("MOTOR", "PWM channels configured");
-    debugPrintf("[MOTOR] Ch A: GPIO%d (%dkHz), Ch B: GPIO%d (%dkHz)\n",
-                BSP::MotorDriver::Left::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR,
-                BSP::MotorDriver::Right::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR);
+    debug_log("MOTOR", "PWM channels configured");
+    debug_printf("[MOTOR] Ch A: GPIO%d (%dkHz), Ch B: GPIO%d (%dkHz)\n",
+                 BSP::MotorDriver::Left::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR,
+                 BSP::MotorDriver::Right::PWM_PIN, Motor::PWM_FREQUENCY / Motor::KHZ_DIVISOR);
 }
 
-/**
- * Set motor speeds with direction control
- * @param left_pwm  Left motor PWM value (-255 to +255)
- * @param right_pwm Right motor PWM value (-255 to +255)
- *
- * Positive values = forward
- * Negative values = reverse
- *
- * Based on reference/general_driver/movtion_module.h::leftCtrl() and rightCtrl()
- */
-void setMotorSpeed(int16_t left_pwm, int16_t right_pwm) {
+void set_motor_speed(int16_t left_pwm, int16_t right_pwm) {
     // Clamp PWM values to safe range
     left_pwm = constrain(left_pwm, Motor::PWM_MIN, Motor::PWM_MAX);
     right_pwm = constrain(right_pwm, Motor::PWM_MIN, Motor::PWM_MAX);
@@ -85,11 +79,7 @@ void setMotorSpeed(int16_t left_pwm, int16_t right_pwm) {
     }
 }
 
-/**
- * Emergency stop - immediately halt both motors
- * Based on reference/general_driver/movtion_module.h::switchEmergencyStop()
- */
-void emergencyStop() {
+void emergency_stop() {
     digitalWrite(BSP::MotorDriver::Left::DIR1_PIN, HIGH);
     digitalWrite(BSP::MotorDriver::Left::DIR2_PIN, HIGH);
     digitalWrite(BSP::MotorDriver::Right::DIR1_PIN, HIGH);

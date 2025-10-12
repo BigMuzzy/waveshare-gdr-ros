@@ -12,7 +12,7 @@
  * - Positive linear_x moves forward
  * - Positive angular_z rotates counterclockwise (left wheel slower)
  */
-void twistToWheelSpeeds(float linear_x, float angular_z,
+void twist_to_wheel_speeds(float linear_x, float angular_z,
                         float &left_speed, float &right_speed) {
     // Differential drive kinematics (wheelbase from config.h)
     // When turning: inner wheel slows down, outer wheel speeds up
@@ -22,9 +22,9 @@ void twistToWheelSpeeds(float linear_x, float angular_z,
 
 /**
  * Convert wheel speeds back to twist command
- * Inverse of twistToWheelSpeeds()
+ * Inverse of twist_to_wheel_speeds()
  */
-void wheelSpeedsToTwist(float left_speed, float right_speed,
+void wheel_speeds_to_twist(float left_speed, float right_speed,
                         float &linear_x, float &angular_z) {
     // Linear velocity is the average of both wheels
     linear_x = (left_speed + right_speed) / 2.0;
@@ -42,7 +42,7 @@ void wheelSpeedsToTwist(float left_speed, float right_speed,
  * 2. Calculate the robot's linear displacement (delta_s) and rotation (delta_theta)
  * 3. Integrate into global pose using the midpoint approximation
  */
-void updateOdometry(int32_t left_delta, int32_t right_delta,
+void update_odometry(int32_t left_delta, int32_t right_delta,
                    float &x, float &y, float &theta) {
 
     // Use pre-calculated conversion factor from config.h
