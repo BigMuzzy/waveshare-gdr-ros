@@ -74,14 +74,15 @@ board_microros_distro = humble
 
 ## 🚀 Implementation Phases
 
-### CURRENT PHASE: Phase 1 - Core Mobility
+### CURRENT PHASE: Phase 1 - Core Mobility ✅
 **Week 1-2:** Basic movement + odometry
-- [ ] Motor PWM control (H-bridge, 100kHz, 8-bit)
-- [ ] Encoder reading (half-quad, speed calc)
-- [ ] PID control (Kp=20, Ki=2000, Kd=0)
-- [ ] /cmd_vel subscriber
-- [ ] /ugv/odom publisher
-- [ ] Emergency stop
+- [x] Motor PWM control (H-bridge, 100kHz, 8-bit)
+- [x] Encoder reading (half-quad, speed calc)
+- [x] PID control (Kp=20, Ki=300, Kd=0) with dynamic tuning
+- [x] /cmd_vel subscriber with 500ms timeout watchdog
+- [x] /ugv/odom publisher
+- [x] Emergency stop
+- [x] **Safety: cmd_vel timeout (500ms) - motors auto-stop**
 
 ### Phase 2 - Sensors (Week 3)
 - [ ] IMU (reuse General_Driver/QMI8658.cpp)
@@ -210,12 +211,13 @@ ros2 topic pub /cmd_vel geometry_msgs/Twist "{linear: {x: 0.1}}"
 - `reference/general_driver/` - Original firmware for hardware drivers
 
 ## ✅ Phase 1 Success Criteria
-- [ ] ESP32 connects to micro-ROS agent
-- [ ] `ros2 node list` shows node
-- [ ] Motors respond to /cmd_vel
-- [ ] Encoders publish accurate data
-- [ ] PID maintains speed (±10%)
-- [ ] Emergency stop works
+- [x] ESP32 connects to micro-ROS agent
+- [x] `ros2 node list` shows node
+- [x] Motors respond to /cmd_vel
+- [x] Encoders publish accurate data
+- [x] PID maintains speed (±10%)
+- [x] Emergency stop works
+- [x] **cmd_vel timeout safety (500ms)**
 
 ## 💡 Remember
 1. **CP2102 is your friend** - Same USB port for upload & ROS

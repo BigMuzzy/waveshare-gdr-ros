@@ -51,6 +51,13 @@ void loop() {
 
     // Control loop - only run when ROS agent is connected
     if (state_connected) {
+        // Safety check: cmd_vel timeout watchdog
+        if (is_cmd_vel_timeout()) {
+            // No cmd_vel received within timeout period - stop for safety
+            emergency_stop();
+            return;
+        }
+
         // 1. Convert cmd_vel to individual wheel speeds using differential drive kinematics
         twist_to_wheel_speeds(cmd_linear_x, cmd_angular_z,
                           target_left_speed, target_right_speed);
@@ -65,7 +72,7 @@ void loop() {
                    actual_left_speed, actual_right_speed,
                    left_pwm, right_pwm);
 
-        // 4. Apply motor commands (if motors are enabled)
+        // 4. Apply motor commands (if motors are enabled and no timeout)
         if (motor_enabled) {
             set_motor_speed(left_pwm, right_pwm);
         } else {

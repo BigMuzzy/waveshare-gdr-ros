@@ -25,6 +25,9 @@ float cmd_linear_x = 0.0;
 float cmd_angular_z = 0.0;
 bool motor_enabled = true;
 
+// Command velocity timeout tracking (safety feature)
+static unsigned long last_cmd_vel_time_ms = 0;  // Timestamp of last received cmd_vel
+
 // Odometry tracking variables (real hardware data)
 static float odom_x = 0.0;          // Global X position (m)
 static float odom_y = 0.0;          // Global Y position (m)
@@ -128,6 +131,9 @@ void cmd_vel_callback(const void *msgin) {
     const geometry_msgs__msg__Twist * msg = (const geometry_msgs__msg__Twist *)msgin;
     cmd_linear_x = msg->linear.x;
     cmd_angular_z = msg->angular.z;
+
+    // Update timestamp for timeout watchdog
+    last_cmd_vel_time_ms = millis();
 }
 
 void motor_enable_callback(const void *msgin) {
@@ -310,6 +316,24 @@ void destroy_entities() {
     ret = rcl_subscription_fini(&cmd_vel_sub, &node);
     ret = rcl_subscription_fini(&motor_enable_sub, &node);
     ret = rcl_subscription_fini(&pid_config_sub, &node);
+}
+
+/**
+ * @brief Check if cmd_vel has timed out
+ * @return true if no cmd_vel received within Safety::CMD_TIMEOUT_MS
+ *
+ * Safety feature: Returns true if it's been too long since last cmd_vel,
+ * indicating the robot should stop for safety.
+ */
+bool is_cmd_vel_timeout() {
+    // If we've never received a command, no timeout
+    if (last_cmd_vel_time_ms == 0) {
+        return false;
+    }
+
+    // Check if time since last command exceeds timeout threshold
+    unsigned long time_since_last_cmd = millis() - last_cmd_vel_time_ms;
+    return (time_since_last_cmd > Safety::CMD_TIMEOUT_MS);
 }
 
 void ros_loop() {
