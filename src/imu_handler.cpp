@@ -44,7 +44,7 @@ namespace QMI8658_Reg {
     constexpr uint8_t CTRL1 = 0x02;         // Serial interface config
     constexpr uint8_t CTRL2 = 0x03;         // Accelerometer control
     constexpr uint8_t CTRL3 = 0x04;         // Gyroscope control
-    constexpr uint8_t CTRL7 = 0x06;         // Enable sensors
+    constexpr uint8_t CTRL7 = 0x08;         // Enable sensors
     constexpr uint8_t RESET = 0x60;         // Software reset
 
     constexpr uint8_t ACCEL_X_L = 0x35;     // Accel X-axis low byte
@@ -66,9 +66,9 @@ namespace QMI8658_Reg {
 
     // Control register values
     constexpr uint8_t RESET_CMD = 0xB0;     // Software reset command
-    constexpr uint8_t CTRL1_DEFAULT = 0x40; // Address auto-increment enabled
-    constexpr uint8_t CTRL2_16G_1000HZ = 0x67;  // ±16g, 1000Hz ODR
-    constexpr uint8_t CTRL3_2048DPS_1000HZ = 0x67; // ±2048dps, 1000Hz ODR
+    constexpr uint8_t CTRL1_DEFAULT = 0x60; // Address auto-increment enabled
+    constexpr uint8_t CTRL2_16G_1000HZ = 0x33;  // ±16g, 1000Hz ODR
+    constexpr uint8_t CTRL3_2048DPS_1000HZ = 0x73; // ±2048dps, 940Hz ODR
     constexpr uint8_t CTRL7_ENABLE_ALL = 0x03;  // Enable accel + gyro
 }
 
@@ -162,13 +162,33 @@ void imu_init() {
     Wire.setClock(IMU::I2C_CLOCK);
     delay(10); // Allow I2C bus to stabilize
 
+    debug_print("I2C initialized: SDA=GPIO");
+    debug_print((int)IMU::I2C_SDA_PIN);
+    debug_print(", SCL=GPIO");
+    debug_print((int)IMU::I2C_SCL_PIN);
+    debug_print(", Clock=");
+    debug_print((int)(IMU::I2C_CLOCK / 1000));
+    debug_println("kHz");
+
     // 2. Verify sensor presence (WHO_AM_I check)
     uint8_t who_am_i = 0;
+    debug_print("Reading WHO_AM_I from address 0x");
+    debug_print((int)IMU::I2C_ADDRESS);
+    debug_println("...");
+
     if (!read_register(QMI8658_Reg::WHO_AM_I, &who_am_i)) {
         debug_log("IMU", "ERROR: I2C communication failed!");
+        debug_println("Possible issues:");
+        debug_println("  - Wrong I2C address (check 0x6A vs 0x6B)");
+        debug_println("  - Sensor not powered");
+        debug_println("  - SDA/SCL wiring incorrect");
+        debug_println("  - Pull-up resistors missing");
         imu_initialized = false;
         return;
     }
+
+    debug_print("WHO_AM_I register read: 0x");
+    debug_println((int)who_am_i);
 
     if (who_am_i != QMI8658_Reg::DEVICE_ID) {
         debug_log("IMU", "ERROR: Wrong device ID!");
@@ -191,7 +211,11 @@ void imu_init() {
 
     // 5. Configure accelerometer (±16g, 1000Hz ODR)
     debug_log("IMU", "Configuring accelerometer (±16g, 1000Hz)...");
-    write_register(QMI8658_Reg::CTRL2, QMI8658_Reg::CTRL2_16G_1000HZ);
+    if(!write_register(QMI8658_Reg::CTRL2, QMI8658_Reg::CTRL2_16G_1000HZ)) {
+        debug_log("IMU", "ERROR: Failed to write CTRL2!");
+        imu_initialized = false;
+        return;
+    }
     delay(1);
 
     // 6. Configure gyroscope (±2048dps, 1000Hz ODR)
@@ -204,6 +228,39 @@ void imu_init() {
     write_register(QMI8658_Reg::CTRL7, QMI8658_Reg::CTRL7_ENABLE_ALL);
     delay(10); // Allow sensors to start
 
+    // 8. Verify configuration by reading back control registers
+    uint8_t ctrl2_readback = 0, ctrl3_readback = 0, ctrl7_readback = 0;
+    read_register(QMI8658_Reg::CTRL2, &ctrl2_readback);
+    read_register(QMI8658_Reg::CTRL3, &ctrl3_readback);
+    read_register(QMI8658_Reg::CTRL7, &ctrl7_readback);
+    // In imu_init(), after configuration
+    debug_println("Register readback verification:");
+
+    uint8_t ctrl2_val = 0;
+    uint8_t ctrl3_val = 0;
+    uint8_t ctrl7_val = 0;
+
+    if (read_register(QMI8658_Reg::CTRL2, &ctrl2_val)) {
+        debug_print("  CTRL2 (Accel): ");
+        debug_println(ctrl2_val);  // Print the VALUE, not the pointer
+    } else {
+        debug_println("  CTRL2: READ FAILED!");
+    }
+
+    if (read_register(QMI8658_Reg::CTRL3, &ctrl3_val)) {
+        debug_print("  CTRL3 (Gyro): ");
+        debug_println(ctrl3_val);
+    } else {
+        debug_println("  CTRL3: READ FAILED!");
+    }
+
+    if (read_register(QMI8658_Reg::CTRL7, &ctrl7_val)) {
+        debug_print("  CTRL7 (Enable): ");
+        debug_println(ctrl7_val);
+    } else {
+        debug_println("  CTRL7: READ FAILED!");
+    }
+
     imu_initialized = true;
     debug_log("IMU", "Initialization complete!");
     debug_println();
@@ -211,6 +268,7 @@ void imu_init() {
 
 bool imu_read(float accel[3], float gyro[3]) {
     if (!imu_initialized) {
+        debug_log("IMU", "Read failed: not initialized");
         return false;
     }
 
@@ -218,6 +276,7 @@ bool imu_read(float accel[3], float gyro[3]) {
     // This is more efficient than separate reads
     uint8_t raw_data[12];
     if (!read_registers(QMI8658_Reg::ACCEL_X_L, raw_data, 12)) {
+        debug_log("IMU", "Read failed: I2C error");
         return false;
     }
 
@@ -266,27 +325,80 @@ void imu_calibrate() {
     debug_print("Collecting ");
     debug_print(IMU::CALIBRATION_SAMPLES);
     debug_println(" samples...");
+    debug_println("Sample | Accel X    Y       Z      | Gyro X     Y      Z     | Raw bytes");
+    debug_println("-------|---------------------------|----------------------|------------");
 
     for (uint8_t i = 0; i < IMU::CALIBRATION_SAMPLES; i++) {
         float accel[3], gyro[3];
+
+        // Read raw data for debugging
+        uint8_t raw_data[12];
+        read_registers(QMI8658_Reg::ACCEL_X_L, raw_data, 12);
+        
+        int16_t accel_raw[3];
+        accel_raw[0] = bytes_to_int16(raw_data[0], raw_data[1]);
+        accel_raw[1] = bytes_to_int16(raw_data[2], raw_data[3]);
+        accel_raw[2] = bytes_to_int16(raw_data[4], raw_data[5]);
+        
+        if (i % 5 == 4) {
+            debug_print("  Raw Z: ");
+            debug_print(accel_raw[2]);  // Should be around -2048 for -1g
+            debug_print(" | Scaled Z: ");
+            debug_println(accel_raw[2] * IMU::ACCEL_SCALE * IMU::GRAVITY_MS2);
+        }
+
+        // Also read raw bytes for first sample to debug
+        bool has_raw = false;
+        if (i == 0) {
+            has_raw = read_registers(QMI8658_Reg::ACCEL_X_L, raw_data, 12);
+        }
 
         // Read raw data (without applying current offsets)
         // We temporarily read with offsets, then we'll recompute them
         if (imu_read(accel, gyro)) {
             // Add current offsets back to get raw values
+            float raw_accel[3], raw_gyro[3];
             for (int axis = 0; axis < 3; axis++) {
-                accel_sum[axis] += accel[axis] + accel_offset[axis];
-                gyro_sum[axis] += gyro[axis] + gyro_offset[axis];
+                raw_accel[axis] = accel[axis] + accel_offset[axis];
+                raw_gyro[axis] = gyro[axis] + gyro_offset[axis];
+                accel_sum[axis] += raw_accel[axis];
+                gyro_sum[axis] += raw_gyro[axis];
             }
             valid_samples++;
+
+            // Print raw sample values (every 5th sample to reduce clutter)
+            if ((i + 1) % 5 == 0) {
+                debug_print(" ");
+                debug_print((int)(i + 1));
+                debug_print("    | ");
+                debug_print(raw_accel[0]);
+                debug_print(" ");
+                debug_print(raw_accel[1]);
+                debug_print(" ");
+                debug_print(raw_accel[2]);
+                debug_print(" | ");
+                debug_print(raw_gyro[0]);
+                debug_print(" ");
+                debug_print(raw_gyro[1]);
+                debug_print(" ");
+                debug_print(raw_gyro[2]);
+
+                // Print raw bytes for first sample
+                if (i == 0 && has_raw) {
+                    debug_print(" | ");
+                    for (int j = 0; j < 12; j++) {
+                        if (raw_data[j] < 16) debug_print("0");
+                        debug_print((int)raw_data[j]);
+                        debug_print(" ");
+                    }
+                }
+                debug_println("");
+            }
+        } else {
+            debug_log("IMU", "WARNING: Failed to read sample during calibration!");
         }
 
         delay(IMU::CALIBRATION_DELAY_MS);
-
-        // Progress indicator
-        if ((i + 1) % 10 == 0) {
-            debug_print(".");
-        }
     }
     debug_println();
 

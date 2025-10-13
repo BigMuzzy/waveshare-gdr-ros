@@ -409,11 +409,29 @@ linear_acceleration:
 [IMU] Starting calibration...
 [IMU] Robot must be stationary and level!
 Collecting 50 samples...
-..........
+Sample | Accel X    Y       Z      | Gyro X     Y      Z
+-------|---------------------------|----------------------
+ 5     | 0.12 -0.08 9.82 | 0.001 -0.002 0.000
+ 10    | 0.11 -0.09 9.81 | 0.002 -0.001 0.001
+ 15    | 0.13 -0.08 9.83 | 0.001 -0.002 0.000
+ 20    | 0.12 -0.07 9.82 | 0.000 -0.001 0.001
+ 25    | 0.12 -0.08 9.81 | 0.001 -0.002 0.000
+ 30    | 0.11 -0.09 9.83 | 0.002 -0.001 0.001
+ 35    | 0.13 -0.08 9.82 | 0.001 -0.002 0.000
+ 40    | 0.12 -0.08 9.81 | 0.001 -0.001 0.001
+ 45    | 0.12 -0.09 9.82 | 0.002 -0.002 0.000
+ 50    | 0.11 -0.08 9.83 | 0.001 -0.001 0.001
+
 [IMU] Calibration complete!
 Accel offsets (m/s²): X=0.123, Y=-0.087, Z=-9.806
 Gyro offsets (rad/s): X=0.0012, Y=-0.0008, Z=0.0003
 ```
+
+**What to look for:**
+- Accel Z should be close to 9.8 m/s² (gravity)
+- Accel X and Y should be small (< 0.5 m/s² when level)
+- Gyro values should be near zero (< 0.01 rad/s when stationary)
+- Values should be relatively stable across samples
 
 **Note:** Accel Z offset should be close to -9.8 m/s² (this compensates for gravity).
 
@@ -496,6 +514,7 @@ for (uint8_t addr = 1; addr < 127; addr++) {
 **Symptoms:**
 - Large random fluctuations in accel/gyro readings
 - Calibration offsets seem wrong
+- Calibration sample values vary significantly
 
 **Possible Causes:**
 1. Robot not stationary during calibration
@@ -504,9 +523,23 @@ for (uint8_t addr = 1; addr < 127; addr++) {
 
 **Solutions:**
 - Re-run calibration with robot completely still
+- Check debug serial output during calibration:
+  - Accel Z should stay near 9.8 m/s² (±0.1)
+  - Gyro values should be < 0.01 rad/s
+  - If values jump around, robot is moving or vibrating
 - Increase calibration samples: `CALIBRATION_SAMPLES = 100`
 - Add low-pass filter in software (future enhancement)
 - Physical damping (mount sensor on foam/rubber)
+
+**Debugging calibration:**
+The calibration function now prints every 5th sample. Review the output:
+```
+Sample | Accel X    Y       Z      | Gyro X     Y      Z
+-------|---------------------------|----------------------
+ 5     | 0.12 -0.08 9.82 | 0.001 -0.002 0.000  ← Good
+ 10    | 2.34 1.56 8.12 | 0.125 0.089 0.045   ← BAD (robot moving!)
+```
+If you see large variations, the robot moved during calibration.
 
 ---
 
