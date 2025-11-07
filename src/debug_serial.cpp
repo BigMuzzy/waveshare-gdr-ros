@@ -74,6 +74,12 @@ void debug_log(const char* tag, const char* msg) {
     debug_printf("[%7lu] [%s] %s\n", timestamp, tag, msg);
 }
 
+void debug_log_init(const char* tag, const char* msg) {
+    // Always print initialization logs regardless of ENABLE_RUNTIME_DEBUG setting
+    unsigned long timestamp = millis();
+    DebugSerial.printf("[%7lu] [%s] %s\n", timestamp, tag, msg);
+}
+
 bool debug_serial_available() {
     return DebugSerial.available() > 0;
 }

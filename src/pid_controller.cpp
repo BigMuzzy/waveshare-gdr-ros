@@ -74,8 +74,8 @@ void pid_compute(float target_left_speed, float target_right_speed,
     pwm_left_output = (int16_t)constrain(final_left, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
     pwm_right_output = (int16_t)constrain(final_right, PIDConfig::OUTPUT_MIN, PIDConfig::OUTPUT_MAX);
 
-    // debug_printf("right pwm %i | target: %.3f | measured: %.3f\n",
-    //              pwm_right_output, target_right_speed, measured_right_speed);
+    DEBUG_PRINTF("(L)pwm %i | (L)target: %.3f | (L)measured: %.3f (R)pwm %i | (R)target: %.3f | (R)measured: %.3f\n",
+                 pwm_left_output, target_left_speed, measured_left_speed, pwm_right_output, target_right_speed, measured_right_speed);
 }
 
 

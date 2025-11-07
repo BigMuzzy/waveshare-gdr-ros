@@ -26,7 +26,7 @@ void encoder_init() {
 
     // Attach encoders in half-quadrature mode (using BSP pin definitions)
     // Half-quad uses only one channel (A), with B for direction
-    encoderLeft.attachHalfQuad(BSP::Encoder::Left::B_PIN, BSP::Encoder::Left::A_PIN);
+    encoderLeft.attachHalfQuad(BSP::Encoder::Left::A_PIN, BSP::Encoder::Left::B_PIN);
     encoderRight.attachHalfQuad(BSP::Encoder::Right::B_PIN, BSP::Encoder::Right::A_PIN);
 
     // Clear encoder counts

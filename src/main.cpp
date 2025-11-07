@@ -14,39 +14,39 @@ float target_right_speed = 0.0;  // Target speed for right wheel (m/s)
 void setup() {
     // Initialize debug serial FIRST (for early debugging on GPIO5/4)
     debug_serial_init(BSP::UART::Debug::BAUD_RATE);
-    debug_log("INIT", "System starting...");
+    DEBUG_LOG_INIT("INIT", "System starting...");
 
     // Initialize Serial for micro-ROS (CP2102 USB-UART bridge)
     Serial.begin(BSP::UART::BAUD_RATE);
     delay(BSP::UART::INIT_DELAY_MS);
 
     // Initialize micro-ROS transport over Serial
-    debug_log("INIT", "Setting up micro-ROS transport...");
+    DEBUG_LOG_INIT("INIT", "Setting up micro-ROS transport...");
     set_microros_serial_transports(Serial);
     delay(BSP::UART::INIT_DELAY_MS);
 
     // Initialize ROS messages
-    debug_log("INIT", "Initializing ROS messages...");
+    DEBUG_LOG_INIT("INIT", "Initializing ROS messages...");
     init_ros_msgs();
 
     // Initialize hardware components
-    debug_log("INIT", "Initializing motors...");
+    DEBUG_LOG_INIT("INIT", "Initializing motors...");
     motor_init();        // H-bridge PWM setup
 
-    debug_log("INIT", "Initializing encoders...");
+    DEBUG_LOG_INIT("INIT", "Initializing encoders...");
     encoder_init();      // Encoder interrupt setup
 
-    debug_log("INIT", "Initializing PID...");
+    DEBUG_LOG_INIT("INIT", "Initializing PID...");
     pid_init();          // PID controller initialization
 
-    debug_log("INIT", "Initializing IMU...");
+    DEBUG_LOG_INIT("INIT", "Initializing IMU...");
     imu_init();          // IMU sensor initialization
     imu_calibrate();     // Auto-calibration (robot must be stationary!)
 
     // Reset encoders to zero
     reset_encoders();
 
-    debug_log("INIT", "System ready!");
+    DEBUG_LOG_INIT("INIT", "System ready!");
     debug_println();
 }
 

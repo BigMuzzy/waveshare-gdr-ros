@@ -59,9 +59,36 @@ void debug_printf(const char* format, ...);
 void debug_log(const char* tag, const char* msg);
 
 /**
+ * @brief Log message with timestamp and tag (initialization phase only)
+ * @param tag Category tag (e.g., "INIT", "MOTOR", "IMU")
+ * @param msg Message to log
+ *
+ * Always outputs during initialization phase regardless of ENABLE_RUNTIME_DEBUG setting
+ */
+void debug_log_init(const char* tag, const char* msg);
+
+/**
  * @brief Check if debug serial has data available
  * @return true if data available to read
  */
 bool debug_serial_available();
+
+// Conditional debug macros - runtime debug can be disabled via config.h
+#include "config.h"
+
+#if ENABLE_RUNTIME_DEBUG
+    #define DEBUG_LOG(tag, msg) debug_log(tag, msg)
+    #define DEBUG_PRINT(x) debug_print(x)
+    #define DEBUG_PRINTLN(x) debug_println(x)
+    #define DEBUG_PRINTF(...) debug_printf(__VA_ARGS__)
+#else
+    #define DEBUG_LOG(tag, msg) ((void)0)
+    #define DEBUG_PRINT(x) ((void)0)
+    #define DEBUG_PRINTLN(x) ((void)0)
+    #define DEBUG_PRINTF(...) ((void)0)
+#endif
+
+// Initialization logs always enabled
+#define DEBUG_LOG_INIT(tag, msg) debug_log_init(tag, msg)
 
 #endif // DEBUG_SERIAL_H

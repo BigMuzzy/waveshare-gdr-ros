@@ -24,7 +24,7 @@ namespace BSP {
     // -------------------------------------------------------------------------
     namespace UART {
         // Main Serial (micro-ROS via CP2102 USB-UART)
-        constexpr uint32_t BAUD_RATE = 115200;           // Primary UART baud rate
+        constexpr uint32_t BAUD_RATE = 921600;           // Primary UART baud rate
         constexpr uint32_t INIT_DELAY_MS = 2000;         // Stabilization delay after init
 
         // Debug Serial (UART2 on separate pins)
@@ -171,6 +171,14 @@ namespace Robot {
     constexpr float MAX_LINEAR_SPEED = 0.463f;             // Maximum linear speed (m/s)
     constexpr float MAX_ANGULAR_SPEED = 2.0f;            // Maximum angular speed (rad/s)
 }
+
+// ============================================================================
+// DEBUG CONFIGURATION
+// ============================================================================
+// Enable/disable debug output during runtime (after initialization)
+// Set to 0 to disable runtime debug logs, 1 to enable
+#define ENABLE_RUNTIME_DEBUG 0
+#define ENABLE_INIT_DEBUG 1
 
 // ============================================================================
 // ROS2 CONFIGURATION
