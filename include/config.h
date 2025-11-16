@@ -24,7 +24,7 @@ namespace BSP {
     // -------------------------------------------------------------------------
     namespace UART {
         // Main Serial (micro-ROS via CP2102 USB-UART)
-        constexpr uint32_t BAUD_RATE = 921600;           // Primary UART baud rate
+        constexpr uint32_t BAUD_RATE = 2000000;          // Primary UART baud rate (pushing CP2102 limits)
         constexpr uint32_t INIT_DELAY_MS = 2000;         // Stabilization delay after init
 
         // Debug Serial (UART2 on separate pins)
@@ -200,9 +200,9 @@ namespace ROS {
     constexpr const char* FRAME_ID_BASE_LINK = "base_link";
 
     // Timing Configuration
-    constexpr uint32_t TIMER_PERIOD_MS = 50;             // 20Hz ROS publish rate
+    constexpr uint32_t TIMER_PERIOD_MS = 20;             // 50Hz ROS publish rate
     constexpr uint32_t SESSION_TIMEOUT_MS = 1000;        // micro-ROS session sync timeout
-    constexpr uint32_t EXECUTOR_SPIN_TIMEOUT_MS = 100;   // Executor spin timeout
+    constexpr uint32_t EXECUTOR_SPIN_TIMEOUT_MS = 5;     // Executor spin timeout (must be << TIMER_PERIOD_MS)
 
     // Array Sizes
     constexpr size_t ENCODER_ARRAY_SIZE = 2;             // 2 encoders (left, right)
@@ -247,7 +247,7 @@ namespace IMU {
                                  (3.14159265359f / 180.0f);            // dps to rad/s
 
     // Update Rate (controlled by ROS timer in ros_com.cpp)
-    constexpr uint32_t UPDATE_INTERVAL_MS = 50;          // 20Hz IMU publish rate (matches ROS timer)
+    constexpr uint32_t UPDATE_INTERVAL_MS = 20;          // 50Hz IMU publish rate (matches ROS timer)
 }
 
 // ============================================================================

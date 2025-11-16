@@ -283,7 +283,7 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
         encoder_msg.data.data[1] = current_right;
         ret = rcl_publish(&encoder_pub, &encoder_msg, NULL);
 
-        // Publish IMU data
+        // Publish IMU data (re-enabled)
         publish_imu_data();
     }
 }
