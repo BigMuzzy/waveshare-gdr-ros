@@ -254,16 +254,24 @@ namespace IMU {
 // BATTERY MONITOR CONFIGURATION (INA219)
 // ============================================================================
 namespace Battery {
-    // Voltage Thresholds (2S LiPo: 6.0V - 8.4V)
-    constexpr float VOLTAGE_MIN = 6.0f;                  // Minimum safe voltage
-    constexpr float VOLTAGE_WARN = 6.5f;                 // Low battery warning
-    constexpr float VOLTAGE_MAX = 8.4f;                  // Maximum voltage (2S full)
+    // I2C Configuration
+    constexpr uint8_t I2C_ADDRESS = BSP::I2C::Address::INA219;  // 0x42
+
+    // Voltage Thresholds (3S LiPo: 9.0V - 12.6V)
+    constexpr float VOLTAGE_MIN = 9.0f;                  // Minimum safe voltage (3.0V per cell)
+    constexpr float VOLTAGE_WARN = 10.2f;                // Low battery warning (3.4V per cell)
+    constexpr float VOLTAGE_NOMINAL = 11.1f;             // Nominal voltage (3.7V per cell)
+    constexpr float VOLTAGE_MAX = 12.6f;                 // Maximum voltage (4.2V per cell, fully charged)
 
     // Current Limits
-    constexpr float CURRENT_MAX_A = 5.0f;                // Maximum current draw
+    constexpr float CURRENT_MAX_A = 10.0f;               // Maximum current draw
+    constexpr float SHUNT_RESISTOR_OHMS = 0.01f;         // 10 mΩ shunt resistor
 
     // Update Rate
-    constexpr uint32_t UPDATE_INTERVAL_MS = 1000;        // 1Hz battery monitoring
+    constexpr uint32_t UPDATE_INTERVAL_MS = 1000;        // 1Hz battery monitoring (published via timer)
+
+    // Battery percentage calculation (3S LiPo discharge curve)
+    constexpr float VOLTAGE_RANGE = VOLTAGE_MAX - VOLTAGE_MIN;  // 3.6V range
 }
 
 // ============================================================================

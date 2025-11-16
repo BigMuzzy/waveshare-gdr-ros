@@ -5,6 +5,7 @@
 #include "config.h"
 #include "pid_controller.h"
 #include "imu_handler.h"
+#include "battery_monitor.h"
 
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
     static volatile int64_t init = -1; \
@@ -53,6 +54,7 @@ rcl_allocator_t allocator;
 rcl_publisher_t odom_pub;
 rcl_publisher_t encoder_pub;
 rcl_publisher_t imu_pub;
+rcl_publisher_t battery_pub;
 
 // Subscribers
 rcl_subscription_t cmd_vel_sub;
@@ -66,6 +68,7 @@ rcl_subscription_t pid_config_sub;
 nav_msgs__msg__Odometry odom_msg;
 std_msgs__msg__Int32MultiArray encoder_msg;
 sensor_msgs__msg__Imu imu_msg;
+sensor_msgs__msg__BatteryState battery_msg;
 
 // Subscriber messages
 geometry_msgs__msg__Twist cmd_vel_msg;
@@ -149,6 +152,18 @@ void init_ros_msgs() {
         imu_msg.angular_velocity_covariance[i] = 0.0;
         imu_msg.linear_acceleration_covariance[i] = 0.0;
     }
+
+    // Initialize battery message
+    battery_msg.voltage = 0.0;
+    battery_msg.current = 0.0;
+    battery_msg.charge = NAN;  // Unknown
+    battery_msg.capacity = NAN;  // Unknown
+    battery_msg.design_capacity = NAN;  // Unknown
+    battery_msg.percentage = 0.0;
+    battery_msg.power_supply_status = sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_UNKNOWN;
+    battery_msg.power_supply_health = sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_UNKNOWN;
+    battery_msg.power_supply_technology = sensor_msgs__msg__BatteryState__POWER_SUPPLY_TECHNOLOGY_LIPO;
+    battery_msg.present = true;
 }
 
 /* ------------------------ */
@@ -224,6 +239,58 @@ void publish_imu_data() {
     (void)ret; // Suppress unused variable warning
 }
 
+/* ------------------------------ */
+/* --- Battery Data Publisher --- */
+/* ------------------------------ */
+void publish_battery_data() {
+    // Check if battery monitor is ready
+    if (!is_battery_ready()) {
+        return;
+    }
+
+    // Read battery measurements
+    float voltage, current, power;
+    if (!battery_read(voltage, current, power)) {
+        // Read failed, skip this update
+        return;
+    }
+
+    // Update timestamp
+    int64_t time_ns = rmw_uros_epoch_nanos();
+    battery_msg.header.stamp.sec = (int32_t)(time_ns / 1000000000);
+    battery_msg.header.stamp.nanosec = (uint32_t)(time_ns % 1000000000);
+
+    // Update battery measurements
+    battery_msg.voltage = voltage;
+    battery_msg.current = current;
+    battery_msg.percentage = battery_get_percentage(voltage);
+
+    // Determine power supply status based on current flow
+    if (current < -0.1f) {
+        // Negative current = charging
+        battery_msg.power_supply_status = sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_CHARGING;
+    } else if (current > 0.1f) {
+        // Positive current = discharging
+        battery_msg.power_supply_status = sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_DISCHARGING;
+    } else {
+        // Near zero current = not charging
+        battery_msg.power_supply_status = sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_NOT_CHARGING;
+    }
+
+    // Determine health based on voltage
+    if (voltage < Battery::VOLTAGE_MIN) {
+        battery_msg.power_supply_health = sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_DEAD;
+    } else if (voltage < Battery::VOLTAGE_WARN) {
+        battery_msg.power_supply_health = sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_GOOD;  // Low but functional
+    } else {
+        battery_msg.power_supply_health = sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_GOOD;
+    }
+
+    // Publish battery message
+    rcl_ret_t ret = rcl_publish(&battery_pub, &battery_msg, NULL);
+    (void)ret; // Suppress unused variable warning
+}
+
 /* -------------------------- */
 /* --- ROS Timer Callback --- */
 /* -------------------------- */
@@ -283,8 +350,16 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time) {
         encoder_msg.data.data[1] = current_right;
         ret = rcl_publish(&encoder_pub, &encoder_msg, NULL);
 
-        // Publish IMU data (re-enabled)
+        // Publish IMU data @ 50 Hz
         publish_imu_data();
+
+        // Publish battery data @ 1 Hz (every 50 callbacks, since timer is 20ms)
+        static uint8_t battery_counter = 0;
+        battery_counter++;
+        if (battery_counter >= 50) {  // 50 * 20ms = 1000ms = 1 Hz
+            publish_battery_data();
+            battery_counter = 0;
+        }
     }
 }
 
@@ -333,6 +408,13 @@ bool create_entities() {
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
         "/ugv/imu",
+        &rmw_qos_profile_default);
+
+    rclc_publisher_init(
+        &battery_pub,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
+        "/ugv/battery",
         &rmw_qos_profile_default);
 
     /* -------------------- */
@@ -390,6 +472,7 @@ void destroy_entities() {
     ret = rcl_publisher_fini(&odom_pub, &node);
     ret = rcl_publisher_fini(&encoder_pub, &node);
     ret = rcl_publisher_fini(&imu_pub, &node);
+    ret = rcl_publisher_fini(&battery_pub, &node);
 
     ret = rcl_subscription_fini(&cmd_vel_sub, &node);
     ret = rcl_subscription_fini(&motor_enable_sub, &node);
